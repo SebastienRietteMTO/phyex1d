@@ -5,6 +5,8 @@ The phyex1D python module runs 1D atmospheric simulations using ideal
 cases described in a "common format" file. The physics is provided by
 the PHYEX package, also used by the Meso-NH and AROME models.
 
+Online documentation is [here](https://sebastienriettemto.github.io/phyex1d).
+
 ## Usage
 
 ### Installation
@@ -21,6 +23,13 @@ git clone https://github.com/UMR-CNRM/PHYEX.git
 cd PHYEX/build/with_ecbuild
 ./make_ecbuild.sh
 cd ../../..
+```
+
+An easy install procedure also exists:
+```
+wget https://github.com/SebastienRietteMTO/phyex1d/raw/refs/heads/main/easy_install.sh
+chmod +x easy_install.sh
+./easy_install.sh INSTALL_DIR MODE
 ```
 
 ### Experiment

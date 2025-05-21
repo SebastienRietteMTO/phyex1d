@@ -448,8 +448,12 @@ class PhysicsArome(PhysicsBase):
         z_flux = self.grid.get_altitude('FLUX', state, self.prognostic_variables)
         if self.grid.ascending:
             dzz = numpy.diff(z_flux)
+            if dzz[-1] == numpy.inf:
+                dzz[-1] = dzz[-2]
         else:
             dzz = -numpy.diff(z_flux)
+            if dzz[0] == numpy.inf:
+                dzz[0] = dzz[1]
         nijt = 1
         nkt = len(pressure)
         if self.namel['PHYEX']['CMICRO'] == 'ICE3':
@@ -631,8 +635,12 @@ class PhysicsArome(PhysicsBase):
             z_flux = self.grid.get_altitude('FLUX', state, self.prognostic_variables)
             if self.grid.ascending:
                 dzz = numpy.diff(z_flux)
+                if dzz[-1] == numpy.inf:
+                    dzz[-1] = dzz[-2]
             else:
                 dzz = -numpy.diff(z_flux)
+                if dzz[0] == numpy.inf:
+                    dzz[0] = dzz[1]
         else:
             raise NotImplementedError('Adjustment not implemented in the not ICE3 case')
 
@@ -698,34 +706,38 @@ class PhysicsArome(PhysicsBase):
         ##################################################################
 
         # Updraft properties
-        pthl_up = numpy.ndarray((nkt, ))
-        prt_up = numpy.ndarray((nkt, ))
-        prv_up = numpy.ndarray((nkt, ))
-        prc_up = numpy.ndarray((nkt, ))
-        pri_up = numpy.ndarray((nkt, ))
-        pu_up = numpy.ndarray((nkt, ))
-        pv_up = numpy.ndarray((nkt, ))
-        ptke_up = numpy.ndarray((nkt, ))
-        pthv_up = numpy.ndarray((nkt, ))
-        pw_up = numpy.ndarray((nkt, ))
-        pfrac_up = numpy.ndarray((nkt, ))
-        pemf = numpy.ndarray((nkt, ))
+        pthl_up = numpy.zeros((nkt, ))
+        prt_up = numpy.zeros((nkt, ))
+        prv_up = numpy.zeros((nkt, ))
+        prc_up = numpy.zeros((nkt, ))
+        pri_up = numpy.zeros((nkt, ))
+        pu_up = numpy.zeros((nkt, ))
+        pv_up = numpy.zeros((nkt, ))
+        ptke_up = numpy.zeros((nkt, ))
+        pthv_up = numpy.zeros((nkt, ))
+        pw_up = numpy.zeros((nkt, ))
+        pfrac_up = numpy.zeros((nkt, ))
+        pemf = numpy.zeros((nkt, ))
 
         # Other arrays
         rm = numpy.array([rv, rc, rr, ri, rs, rg, rh])
+        if self.grid.ascending:
+            z_flux_trunc = z_flux[:-1]
+        else:
+            z_flux_trunc = z_flux[1:]
 
         x = numpy.newaxis
         result = self._pyphyex.PYSHALLOW_MF(
                              nijt, nkt, 1 if self.grid.ascending else -1,
                              0, krr, 2, 3, 0, False, 0, 0,
-                             timestep, dzz[:, x], z_flux[:-1, x], rhodj[:, x], rhodref[:, x],
+                             timestep, dzz[:, x], z_flux_trunc[:, x], rhodj[:, x], rhodref[:, x],
                              pressure[:, x], exner[:, x],
                              numpy.ones((nijt, )) * sfth, numpy.ones((nijt, )) * sfrv, theta[:, x],
                              rm[:krr, :, x], state['u'][:, x], state['v'][:, x], state['tke'][:, x],
                              sv[:, :, x], pthl_up[:, x], prt_up[:, x], prv_up[:, x], prc_up[:, x],
                              pri_up[:, x], pu_up[:, x], pv_up[:, x], ptke_up[:, x], pthv_up[:, x],
                              pw_up[:, x], pfrac_up[:, x], pemf[:, x],
-                             self.dx, self.dy, KBUDGETS=0)
+                             self.dx, self.dy, PRSVS=svs[:, :, x], KBUDGETS=0)
         result = [array[..., 0] for array in result]
         (du_mf, dv_mf, dtke_mf, dthl_mf, drt_mf, dsv_mf, sigs_mf,
          state['rc_MF'], state['ri_MF'], state['CF_MF'], state['HLC_HRC_MF'], state['HLC_HCF_MF'],
@@ -808,8 +820,12 @@ class PhysicsArome(PhysicsBase):
         ws = ws * rhodj
         thetas = thetas * rhodj
         tkes = tkes * rhodj
-        rs = rs * rhodj
+        rs = rs * rhodj[numpy.newaxis, :]
         svs = svs * rhodj
+        if self.grid.ascending:
+            z_flux_trunc = z_flux[:-1]
+        else:
+            z_flux_trunc = z_flux[1:]
 
         result = self._pyphyex.PYTURB(
                 nijt, nkt + 2 * nvext_turb, 1 if self.grid.ascending else -1, nvext_turb,
@@ -819,7 +835,7 @@ class PhysicsArome(PhysicsBase):
                 o2d, onomixlg, oflat, ocouples, oblowsnow, oibm, oflyer,
                 ocompute_src, rsnow, oocean, odeepoc, odiag_in_run,
                 hturblen_cl, self.namel['PHYEX']['CMICRO'], helec, timestep, 999,
-                x(dxx), x(dyy), x(dzz), x(dzx), x(dzy), x(z_flux[:-1]),
+                x(dxx), x(dyy), x(dzz), x(dzx), x(dzy), x(z_flux_trunc),
                 x(dircosxw), x(dircosyw), x(dircoszw), x(cosslope), x(sinslope),
                 x(rhodj), x(thvref), x(hgradleo), x(hgradgog), x(state['Zs']),
                 x(sfth), x(sfrv), sfsv[:, numpy.newaxis], x(sfu), x(sfv),
@@ -829,13 +845,12 @@ class PhysicsArome(PhysicsBase):
                 x(theta), x(rm[:krr, ...]), x(us), x(vs), x(ws), x(thetas),
                 x(rs[:krr, ...]), x(svs), x(tkes),
                 x(flxzthvmf), x(flxzumf), x(flxzvmf),
-                kbudgets, missingOUT=['PEDR', 'PLEM', 'PDPMF', 'PTPMF', 'PDRUS_TURB',
-                'PDRVS_TURB', 'PDRSVS_TURB', 'PTR', 'PDISS', 'PIBM_XMUT',
-                'PCURRENT_TKE_DISS'])
+                kbudgets, missingOUT=['PEDR', 'PLEM', 'PDPMF', 'PTPMF',
+                'PTR', 'PDISS', 'PIBM_XMUT', 'PCURRENT_TKE_DISS'])
 
         result = [x(array, reverse=True) for array in result]
         (_, _, _, _, us, vs, ws, thetas, rs, svs, tkes, sigs_turb, _,
-         _, _, _, _, _, _, dthetal_turb, drt_turb) = result
+         _, _, _, _, _, _, _, _, dthetal_turb, drt_turb, _) = result
 
         us = us / rhodj
         vs = vs /rhodj
@@ -844,7 +859,7 @@ class PhysicsArome(PhysicsBase):
         tkes = tkes / rhodj
         dthetal_turb = dthetal_turb / rhodj
         drt_turb = drt_turb / rhodj
-        rs = rs / rhodj
+        rs = rs / rhodj[numpy.newaxis, :]
         svs = svs / rhodj
 
         if 'T' in self.prognostic_variables:

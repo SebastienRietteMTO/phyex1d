@@ -41,8 +41,8 @@ class Phyex1d(PPPYComp):
                                grid=Grid(exp.get('grid', 'L90arome')),
                                pyphyex=exp.get('pyphyex', None),
                                namel=exp.get('namel', 'default'),
-                               dx=exp.get('dx', 0),
-                               dy=exp.get('dy', 0)))
+                               dx=exp.get('dx', 1300),
+                               dy=exp.get('dy', 1300)))
         super().__init__(schemes=schemes,
                          output_dir=output_dir,
                          duration=self.get_duration(),

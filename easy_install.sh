@@ -54,6 +54,7 @@ else
 fi
 
 git clone https://github.com/UMR-CNRM/PHYEX.git
+pip install -r PHYEX/requirements.txt
 . PHYEX/tools/env.sh
 cd PHYEX/build/with_ecbuild
 ./make_ecbuild.sh

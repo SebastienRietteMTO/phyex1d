@@ -12,6 +12,7 @@ dependencies = [
   "scipy",
   "netCDF4",
   "f90nml",
+  "ephem",
 ]
 authors = [
   { name = "Sébastien Riette", email = "sebastien.riette@meteo.fr" },

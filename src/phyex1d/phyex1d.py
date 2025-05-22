@@ -40,9 +40,11 @@ class Phyex1d(PPPYComp):
                                inputfile=inputfile,
                                grid=Grid(exp.get('grid', 'L90arome')),
                                pyphyex=exp.get('pyphyex', None),
+                               pyecrad=exp.get('pyecrad', None),
                                namel=exp.get('namel', 'default'),
-                               dx=exp.get('dx', 1300),
-                               dy=exp.get('dy', 1300)))
+                               dx=exp.get('dx', 0),
+                               dy=exp.get('dy', 0),
+                               attrs=exp.get('attrs', {})))
         super().__init__(schemes=schemes,
                          output_dir=output_dir,
                          duration=self.get_duration(),

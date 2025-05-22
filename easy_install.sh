@@ -60,12 +60,20 @@ cd PHYEX/build/with_ecbuild
 ./make_ecbuild.sh
 cd ../../../
 
+git clone https://github.com/SebastienRietteMTO/ecrad.git
+cd ecrad
+git checkout pyecrad
+make
+make python
+cd ..
+
 cat - <<EOF > execute.sh
 cd $PWD
 . PHYEX/tools/env.sh
 . phyex1d.env/bin/activate
 phyex1d DEPHY-SCM/ARMCU/REF/ARMCU_REF_SCM_driver.nc \\
         --exp dt=60 class=PhysicsAromeThetaR grid=L90mesonh \\
+              pyecrad=$PWD/ecrad/driver/pyecrad.py \\
         --plot rv.png rv y_var=P \\
         --plot qc.png qc y_var=P vmin=0. vmax=5.E-5 \\
         --plot T.png T y_var=P \\

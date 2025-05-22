@@ -661,10 +661,6 @@ class PhysicsArome(PhysicsBase):
         #                       SURFACE
         ##################################################################
         ##################################################################
-        self.case.surface_forcing_temp = 'ts'
-        self.case.surface_forcing_moisture = 'none'
-        print(self.case.surface_forcing_temp)
-        print(self.case.surface_forcing_moisture)
         if self.case.surface_forcing_temp == 'ts' or self.case.surface_forcing_moisture == 'none':
             klevgrd=0 if self.grid.ascending else -1
             windgrd = numpy.sqrt(state['u'][klevgrd]**2 + state['v'][klevgrd]**2)

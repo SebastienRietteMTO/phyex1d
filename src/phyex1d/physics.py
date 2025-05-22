@@ -14,6 +14,7 @@ import f90nml
 from pppy import PPPY
 from . import Phyex1DError
 from . import Cst
+from . import wasp
 from ctypesForFortran import MISSING
 import ephem
 import datetime
@@ -453,6 +454,9 @@ class PhysicsBase(PPPY):
         if 'Ts' in state:
             interp, nc = get_interpolator('ts_forc', nc)
             state['Ts'] = interp([time])[0]
+        if 'Tskin' in state:
+            interp, nc = get_interpolator('tskin', nc)
+            state['Tskin'] = interp([time])[0]
         if 'Ps' in state:
             interp, nc = get_interpolator('ps_forc', nc)
             state['Ps'] = interp([time])[0]
@@ -785,16 +789,38 @@ class PhysicsArome(PhysicsBase):
         #                       SURFACE
         ##################################################################
         ##################################################################
+        if self.case.surface_forcing_temp == 'ts' or self.case.surface_forcing_moisture == 'none':
+            klevgrd=0 if self.grid.ascending else -1
+            windgrd = numpy.sqrt(state['u'][klevgrd]**2 + state['v'][klevgrd]**2)
+            exner_surf =  (state['Ps'] / 1.E5) ** (self.cst.Rd / self.cst.Cpd)
+            if 'qv' in self.prognostic_variables:
+                qdm = 1.
+                for var in (rv, rc, rr, ri, rs, rg, rh):
+                    qdm += var
+                qdm = 1. / qdm
+                qv_grd = state['rv'][klevgrd] * qdm[klevgrd]
+            else:
+                qv_grd = state['qv'][klevgrd]
+            # TODO, filled precip in precipitation rate (kg/s/m2)
+            precip = 0.
+            
+            wave_height=0.
+            wave_peak_period=0.
+            sshf_wasp, sfrv_wasp = wasp.WASP_FLUX(state['T'][klevgrd], qv_grd,exner[klevgrd],rho[klevgrd],windgrd,z_mass[klevgrd],z_flux[klevgrd],
+                           state['Tskin'],exner_surf,state['Ps'],precip,wave_height,wave_peak_period)
+            sfth_wasp = sshf_wasp / (self.cst.Cpd * rho[0 if self.grid.ascending else -1])
+
         if self.case.surface_forcing_temp == 'none':  # pylint: disable=no-member
-            # Nothing to do with none
-            pass
+            raise NotImplementedError('surface_forcing_temp')
         elif self.case.surface_forcing_temp == 'surface_flux':  # pylint: disable=no-member
             sshf = state['sshf']
+        elif self.case.surface_forcing_temp == 'ts':
+            sshf = sshf_wasp
+            sfth = sfth_wasp
         else:
             raise NotImplementedError('surface_forcing_temp')
         if self.case.surface_forcing_moisture == 'none':  # pylint: disable=no-member
-            # Nothing to do with none
-            pass
+            sfrv = sfrv_wasp
         elif self.case.surface_forcing_moisture == 'surface_flux':  # pylint: disable=no-member
             slhf = state['slhf']
         else:
@@ -808,7 +834,6 @@ class PhysicsArome(PhysicsBase):
             sfv = 0
         else:
             raise NotImplementedError('surface_forcing_wind')
-
         sfsv = numpy.zeros((ksv, ))
 
         if 'Ts' in state:
@@ -824,8 +849,9 @@ class PhysicsArome(PhysicsBase):
         else:
             latent_heat = self.cst.LsTt - (self.cst.Cpv - self.cst.Ci) * \
                           (surface_temperature - self.cst.Tt)
-        sfrv = slhf / (latent_heat * rho[0 if self.grid.ascending else -1])
-        sfth = sshf / (self.cst.Cpd * rho[0 if self.grid.ascending else -1])
+        if not (self.case.surface_forcing_temp == 'ts') or not (self.case.surface_forcing_moisture == 'none'):
+            sfrv = slhf / (latent_heat * rho[0 if self.grid.ascending else -1])
+            sfth = sshf / (self.cst.Cpd * rho[0 if self.grid.ascending else -1])
 
         ##################################################################
         ##################################################################

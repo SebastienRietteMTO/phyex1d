@@ -1,6 +1,7 @@
 """
 Implementation of a PHYEX timestep
 """
+# pylint: disable=no-member
 
 import sys
 import os
@@ -77,7 +78,7 @@ class PhysicsBase(PPPY):
             def __init__(self, inputfile):
                 self.adv_ua = 0
                 self.adv_va = 0
-                with netCDF4.Dataset(inputfile, 'r') as nc:  # pylint: disable=no-member
+                with netCDF4.Dataset(inputfile, 'r') as nc:
                     for k in nc.ncattrs():
                         setattr(self, k, getattr(nc, k))
                 if attrs is not None:
@@ -122,6 +123,7 @@ class PhysicsBase(PPPY):
             nml['PHYEX']['CSCONV'] = nml['PHYEX'].get('CSCONV', 'EDKF')
             nml['PHYEX']['CTURB'] = nml['PHYEX'].get('CTURB', 'TKEL')
             nml['PHYEX']['RAD'] = nml['PHYEX'].get('RAD', 'ECRAD')
+            nml['PHYEX']['SURFACE'] = nml['PHYEX'].get('SURFACE', 'WASP')
 
         with tempfile.NamedTemporaryFile() as namel:
             nml = f90nml.read(namel.name)
@@ -154,7 +156,7 @@ class PhysicsBase(PPPY):
             set_default(self.full_phyex_namel)
             os.remove(f'fort.{numnml}')
 
-        if nml['PHYEX']['RAD'] == 'ECRAD' and self.case.radiation == 'on':  # pylint: disable=no-member
+        if nml['PHYEX']['RAD'] == 'ECRAD' and self.case.radiation == 'on':
             # ECRAD SETUP
             try:
                 if self.pyecrad is None:
@@ -295,7 +297,7 @@ class PhysicsBase(PPPY):
                     'lon': 'lon'
                   }
 
-        with netCDF4.Dataset(self.inputfile, 'r') as nc:  # pylint: disable=no-member
+        with netCDF4.Dataset(self.inputfile, 'r') as nc:
             # Surface fields
             for var in ('Zs', 'Ps', 'sshf', 'slhf', 'z0', 'z0h', 'z0q', 'Tskin', 'Ts', 'ustar',
                         'SolarIrradiance', 'albedo', 'emissivity', 'sza', 'lat', 'lon'):
@@ -325,7 +327,8 @@ class PhysicsBase(PPPY):
                     interp = RegularGridInterpolator((input_coord, ), nc[nc_names[var]][0, :],
                                                      bounds_error=False, fill_value=None)
                     init_state[var] = interp(output_coord)
-            init_state['tke'] = numpy.maximum(self.full_phyex_namel['NAM_TURBn']['XTKEMIN'], init_state['tke'])
+            init_state['tke'] = numpy.maximum(self.full_phyex_namel['NAM_TURBn']['XTKEMIN'],
+                                              init_state['tke'])
 
         # Vertical coordinates
         self.add_vertical_coordinate(init_state)
@@ -342,6 +345,9 @@ class PhysicsBase(PPPY):
         init_state['CF'] = numpy.zeros(init_state['P'].shape)
         for var in ('lw_up', 'lw_dn', 'sw_up', 'sw_dn'):
             init_state[var] = numpy.zeros((init_state['P'].shape[0] + 1, ))
+        for var in ('sfrv', 'swf', 'sfth', 'sshf', 'slhf'):
+            if var not in init_state:
+                init_state[var] = numpy.zeros((1, ))
 
         return init_state
 
@@ -366,7 +372,7 @@ class PhysicsBase(PPPY):
                 interp = self.interpolators[var]
             else:
                 if nc is None:
-                    nc = netCDF4.Dataset(self.inputfile, 'r')  # pylint: disable=no-member
+                    nc = netCDF4.Dataset(self.inputfile, 'r')
                 input_times = nc['time'][...]
                 if len(nc[var].shape) == 2:
                     if self.grid.kind in ('H', 'hybridH'):
@@ -394,42 +400,42 @@ class PhysicsBase(PPPY):
 
         # Temperature advection and nudging, radiative tendency
         if 'Theta' in self.prognostic_variables:
-            if self.case.adv_theta == 1:  # pylint: disable=no-member
+            if self.case.adv_theta == 1:
                 interp, nc = get_interpolator('tntheta_adv', nc)
                 state['Theta'] += interp(numpy.column_stack(([time] * len(output_coord),
                                                             output_coord))) * timestep
-            if self.case.nudging_theta == 1:  # pylint: disable=no-member
+            if self.case.nudging_theta == 1:
                 raise NotImplementedError('Nudging theta')
-            if self.case.radiation == 'tend':  # pylint: disable=no-member
+            if self.case.radiation == 'tend':
                 interp, nc = get_interpolator('tntheta_rad', nc)
                 state['Theta'] += interp(numpy.column_stack(([time] * len(output_coord),
                                                             output_coord))) * timestep
         elif 'T' in self.prognostic_variables:
-            if self.case.adv_ta == 1:  # pylint: disable=no-member
+            if self.case.adv_ta == 1:
                 interp, nc = get_interpolator('tnta_adv', nc)
                 state['T'] += interp(numpy.column_stack(([time] * len(output_coord),
                                                         output_coord))) * timestep
-            if self.case.nudging_ta == 1:  # pylint: disable=no-member
+            if self.case.nudging_ta == 1:
                 raise NotImplementedError('Nudging ta')
-            if self.case.radiation == 'tend':  # pylint: disable=no-member
+            if self.case.radiation == 'tend':
                 interp, nc = get_interpolator('tnta_rad', nc)
                 state['T'] += interp(numpy.column_stack(([time] * len(output_coord),
                                                         output_coord))) * timestep
 
         # Hydrometeors advection and nudging
         if 'rv' in self.prognostic_variables:
-            if self.case.adv_rv == 1:  # pylint: disable=no-member
+            if self.case.adv_rv == 1:
                 interp, nc = get_interpolator('tnrv_adv', nc)
                 state['rv'] += interp(numpy.column_stack(([time] * len(output_coord),
                                                          output_coord))) * timestep
-            if self.case.nudging_rv == 1:  # pylint: disable=no-member
+            if self.case.nudging_rv == 1:
                 raise NotImplementedError('Nudging rv')
         elif 'qv' in self.prognostic_variables:
-            if self.case.adv_qv == 1:  # pylint: disable=no-member
+            if self.case.adv_qv == 1:
                 interp, nc = get_interpolator('tnqv_adv', nc)
                 state['qv'] += interp(numpy.column_stack(([time] * len(output_coord),
                                                          output_coord))) * timestep
-            if self.case.nudging_qv == 1:  # pylint: disable=no-member
+            if self.case.nudging_qv == 1:
                 raise NotImplementedError('Nudging qv')
 
         # Wind advection and nudging
@@ -441,13 +447,13 @@ class PhysicsBase(PPPY):
             interp, nc = get_interpolator('tnva_adv', nc)
             state['v'] += interp(numpy.column_stack(([time] * len(output_coord),
                                                     output_coord))) * timestep
-        if self.case.nudging_ua == 1:  # pylint: disable=no-member
+        if self.case.nudging_ua == 1:
             raise NotImplementedError('Nudging u')
-        if self.case.nudging_va == 1:  # pylint: disable=no-member
+        if self.case.nudging_va == 1:
             raise NotImplementedError('Nudging v')
-        if self.case.forc_wa == 1:  # pylint: disable=no-member
-            raise NotImplementedError('Vertical velocity')
-        if self.case.forc_geo == 1:  # pylint: disable=no-member
+        if self.case.forc_wa == 1:
+            print('Vertical velocity forcing must be implemented')
+        if self.case.forc_geo == 1:
             print('geostrophic forcing must be implemented')
 
         # Surface
@@ -460,10 +466,10 @@ class PhysicsBase(PPPY):
         if 'Ps' in state:
             interp, nc = get_interpolator('ps_forc', nc)
             state['Ps'] = interp([time])[0]
-        if self.case.surface_forcing_temp == 'surface_flux':  # pylint: disable=no-member
+        if self.case.surface_forcing_temp == 'surface_flux':
             interp, nc = get_interpolator('hfss', nc)
             state['sshf'] = interp([time])[0]
-        if self.case.surface_forcing_moisture == 'surface_flux':  # pylint: disable=no-member
+        if self.case.surface_forcing_moisture == 'surface_flux':
             interp, nc = get_interpolator('hfls', nc)
             state['slhf'] = interp([time])[0]
         if 'z0' in state:
@@ -607,7 +613,9 @@ class PhysicsArome(PhysicsBase):
         #                       ADJUSTMENT
         ##################################################################
         ##################################################################
-        if self.full_phyex_namel['PHYEX']['CMICRO'] == 'ICE3':
+        if self.full_phyex_namel['PHYEX']['CMICRO'] == 'NONE':
+            pass
+        elif self.full_phyex_namel['PHYEX']['CMICRO'] == 'ICE3':
             if 'qv' in self.prognostic_variables:
                 rvsin = rvs.copy()
                 rcsin = rcs.copy()
@@ -707,134 +715,109 @@ class PhysicsArome(PhysicsBase):
                 if dzz[0] == numpy.inf:
                     dzz[0] = dzz[1]
         else:
-            raise NotImplementedError('Adjustment not implemented in the not ICE3 case')
+            raise Phyex1DError('Wrong CMICRO scheme choice for adjustment')
 
         ##################################################################
         ##################################################################
         #                       RADIATION
         ##################################################################
         ##################################################################
-        if self.case.radiation == 'on':  # pylint: disable=no-member
-            order = -1 if self.grid.ascending else 1
-            pressure_flux = self.grid.get_pressure('FLUX', state, self.prognostic_variables)
-            temperature_flux = numpy.ndarray(pressure_flux .shape)
-            temperature_flux[1:-1] = .5 * (temperature[1:] + temperature[:-1])
-            if self.grid.ascending:
-                temperature_flux[0] = state['Tskin']
-                temperature_flux[-1] = temperature[-1]
-            else:
-                temperature_flux[-1] = state['Tskin']
-                temperature_flux[0] = temperature[0]
+        if self.case.radiation == 'on':
+            if self.full_phyex_namel['PHYEX']['RAD'] == 'NONE':
+                pass
+            elif self.full_phyex_namel['PHYEX']['RAD'] == 'ECRAD':
+                order = -1 if self.grid.ascending else 1
+                pressure_flux = self.grid.get_pressure('FLUX', state, self.prognostic_variables)
+                temperature_flux = numpy.ndarray(pressure_flux .shape)
+                temperature_flux[1:-1] = .5 * (temperature[1:] + temperature[:-1])
+                tskin = state['Ts' if self.case.surface_type == 'ocean' else 'Tskin']
+                if self.grid.ascending:
+                    temperature_flux[0] = tskin
+                    temperature_flux[-1] = temperature[-1]
+                else:
+                    temperature_flux[-1] = tskin
+                    temperature_flux[0] = temperature[0]
 
-            x = numpy.newaxis
-            solar_irradiance = state.get('SolarIrradiance', 1366.)
-            spectral_solar_cycle_multiplier = 0.
-            if 'sza' in state:
-                cos_solar_zenith_angle = numpy.ones((nijt, )) * state['sza']
-            else:
-                obs = ephem.Observer()
-                obs.lat = str(state['lat'])
-                obs.long = str(state['lon'])
-                # pylint: disable-next=no-member
-                obs.date = datetime.datetime.fromisoformat(self.case.start_date) + \
-                           datetime.timedelta(seconds=timestep * timestep_number)
-                sun = ephem.Sun(obs)
-                sun.compute(obs)
-                cos_solar_zenith_angle = numpy.ones((nijt, )) * numpy.cos(numpy.pi / 2. - sun.alt)
-            fractional_std = numpy.ones((nkt, )) * 1.  # could be computed by the cloud scheme
-            q_liquid = rc * qdm
-            # Simple distinction between land (10um) and ocean (13um) by Zhang and Rossow
-            # pylint: disable-next=no-member
-            re_liquid = (10. if self.case.surface_type == 'ocean' else 13.)
-            re_liquid = numpy.ones((nkt, )) * re_liquid * 1.E-6  # convert in m
-            q_ice = ri * qdm
-            # Liou and Ou
-            temperature_c = numpy.minimum(temperature - self.cst.Tt, -0.1)
-            re_ice = 326.3 + temperature_c * \
-                     (12.42 + temperature_c * (0.197 + temperature_c * 0.0012))
-            re_ice = numpy.minimum(numpy.maximum(re_ice, 40), 130) * 1.E-6
-            iseed = numpy.ones((nijt, ), dtype=numpy.int64)
-            overlap_param = numpy.ones((nkt - 1, ))  # 1 for max
-            tskin = numpy.ones((nijt, )) * state['Tskin']
-            sw_albedo = numpy.ones((1, )) * state.get('albedo', 1.)  # albedo diffuse
-            sw_albedo_direct = sw_albedo.copy()  # albedo direct
-            lw_emissivity =  numpy.ones((1, )) * state.get('emissivity', 1.)  # emissivity
-            q = rv * qdm
-            o3 = numpy.zeros((nkt, ))
+                x = numpy.newaxis
+                solar_irradiance = state.get('SolarIrradiance', 1366.)
+                spectral_solar_cycle_multiplier = 0.
+                if 'sza' in state:
+                    cos_solar_zenith_angle = numpy.ones((nijt, )) * state['sza']
+                else:
+                    obs = ephem.Observer()
+                    obs.lat = str(state['lat'])
+                    obs.long = str(state['lon'])
+                    obs.date = datetime.datetime.fromisoformat(self.case.start_date) + \
+                               datetime.timedelta(seconds=timestep * timestep_number)
+                    sun = ephem.Sun(obs)
+                    sun.compute(obs)
+                    cos_solar_zenith_angle = numpy.ones((nijt, )) * numpy.cos(numpy.pi / 2. - sun.alt)
+                fractional_std = numpy.ones((nkt, )) * 1.  # could be computed by the cloud scheme
+                q_liquid = rc * qdm
+                # Simple distinction between land (10um) and ocean (13um) by Zhang and Rossow
+                re_liquid = (10. if self.case.surface_type == 'ocean' else 13.)
+                re_liquid = numpy.ones((nkt, )) * re_liquid * 1.E-6  # convert in m
+                q_ice = ri * qdm
+                # Liou and Ou
+                temperature_c = numpy.minimum(temperature - self.cst.Tt, -0.1)
+                re_ice = 326.3 + temperature_c * \
+                         (12.42 + temperature_c * (0.197 + temperature_c * 0.0012))
+                re_ice = numpy.minimum(numpy.maximum(re_ice, 40), 130) * 1.E-6
+                iseed = numpy.ones((nijt, ), dtype=numpy.int64)
+                overlap_param = numpy.ones((nkt - 1, ))  # 1 for max
+                tskin = numpy.ones((nijt, )) * tskin
+                sw_albedo = numpy.ones((1, )) * state.get('albedo', 1.)  # albedo diffuse
+                sw_albedo_direct = sw_albedo.copy()  # albedo direct
+                lw_emissivity =  numpy.ones((1, )) * state.get('emissivity', 1.)  # emissivity
+                q = rv * qdm
+                o3 = numpy.zeros((nkt, ))
 
-            result = self._pyecrad.run(
-                1, len(pressure), pressure_flux[::order, x], temperature_flux[::order, x],
-                solar_irradiance, spectral_solar_cycle_multiplier, cos_solar_zenith_angle,
-                state['CF'][::order, x], fractional_std[::order, x], q_liquid[::order, x],
-                re_liquid[::order, x], q_ice[::order, x], re_ice[::order, x], iseed,
-                overlap_param[::order, x],
-                tskin, sw_albedo.shape[0], sw_albedo[:, x],
-                sw_albedo_direct[:, x], lw_emissivity.shape[0],
-                lw_emissivity[:, x], q[::order, x], o3[::order, x])
-            result = [array[::order, 0] for array in result]
-            state['lw_up'], state['lw_dn'], state['sw_up'], state['sw_dn'] = result
-            net = state['lw_dn'] + state['sw_dn'] - (state['lw_up'] + state['sw_up'])
-            cp = qdm * (self.cst.Cpd +
-                        self.cst.Cpv * rv +
-                        self.cst.Cl * (rc + rr) +
-                        self.cst.Ci * (ri + rs + rg + rh))
-            dt_rad = numpy.diff(net) / (rho * cp * dzz)
-            if 'T' in self.prognostic_variables:
-                dtemperature += dt_rad
+                result = self._pyecrad.run(
+                    1, len(pressure), pressure_flux[::order, x], temperature_flux[::order, x],
+                    solar_irradiance, spectral_solar_cycle_multiplier, cos_solar_zenith_angle,
+                    state['CF'][::order, x], fractional_std[::order, x], q_liquid[::order, x],
+                    re_liquid[::order, x], q_ice[::order, x], re_ice[::order, x], iseed,
+                    overlap_param[::order, x],
+                    tskin, sw_albedo.shape[0], sw_albedo[:, x],
+                    sw_albedo_direct[:, x], lw_emissivity.shape[0],
+                    lw_emissivity[:, x], q[::order, x], o3[::order, x])
+                result = [array[::order, 0] for array in result]
+                state['lw_up'], state['lw_dn'], state['sw_up'], state['sw_dn'] = result
+                net = state['lw_dn'] + state['sw_dn'] - (state['lw_up'] + state['sw_up'])
+                cp = qdm * (self.cst.Cpd +
+                            self.cst.Cpv * rv +
+                            self.cst.Cl * (rc + rr) +
+                            self.cst.Ci * (ri + rs + rg + rh))
+                dt_rad = numpy.diff(net) / (rho * cp * dzz)
+                if 'T' in self.prognostic_variables:
+                    dtemperature += dt_rad
+                else:
+                    thetas += dt_rad * exner
             else:
-                thetas += dt_rad * exner
+                raise Phyex1DError('Wrong RAD scheme choice')
+
 
         ##################################################################
         ##################################################################
         #                       SURFACE
         ##################################################################
         ##################################################################
-        if self.case.surface_forcing_temp == 'ts' or self.case.surface_forcing_moisture == 'none':
-            klevgrd=0 if self.grid.ascending else -1
-            windgrd = numpy.sqrt(state['u'][klevgrd]**2 + state['v'][klevgrd]**2)
-            exner_surf =  (state['Ps'] / 1.E5) ** (self.cst.Rd / self.cst.Cpd)
-            if 'qv' in self.prognostic_variables:
-                qdm = 1.
-                for var in (rv, rc, rr, ri, rs, rg, rh):
-                    qdm += var
-                qdm = 1. / qdm
-                qv_grd = state['rv'][klevgrd] * qdm[klevgrd]
-            else:
-                qv_grd = state['qv'][klevgrd]
-            # TODO, filled precip in precipitation rate (kg/s/m2)
-            precip = 0.
-            
-            wave_height=0.
-            wave_peak_period=0.
-            sshf_wasp, sfrv_wasp = wasp.WASP_FLUX(state['T'][klevgrd], qv_grd,exner[klevgrd],rho[klevgrd],windgrd,z_mass[klevgrd],z_flux[klevgrd],
-                           state['Tskin'],exner_surf,state['Ps'],precip,wave_height,wave_peak_period)
-            sfth_wasp = sshf_wasp / (self.cst.Cpd * rho[0 if self.grid.ascending else -1])
+        if self.case.surface_forcing_temp in ('none', 'ts') or \
+           self.case.surface_forcing_moisture in ('none', 'beta', 'mrsos') or \
+           self.case.surface_forcing_wind in ('none', 'z0', 'ustar'):
+            need_scheme = True
+        else:
+            need_scheme = False
 
-        if self.case.surface_forcing_temp == 'none':  # pylint: disable=no-member
-            raise NotImplementedError('surface_forcing_temp')
-        elif self.case.surface_forcing_temp == 'surface_flux':  # pylint: disable=no-member
-            sshf = state['sshf']
-        elif self.case.surface_forcing_temp == 'ts':
-            sshf = sshf_wasp
-            sfth = sfth_wasp
-        else:
-            raise NotImplementedError('surface_forcing_temp')
-        if self.case.surface_forcing_moisture == 'none':  # pylint: disable=no-member
-            sfrv = sfrv_wasp
-        elif self.case.surface_forcing_moisture == 'surface_flux':  # pylint: disable=no-member
-            slhf = state['slhf']
-        else:
-            raise NotImplementedError('surface_forcing_moisture')
-        if self.case.surface_forcing_wind == 'none':  # pylint: disable=no-member
-            # Nothing to do with none
-            pass
-        elif self.case.surface_forcing_wind == 'z0':  # pylint: disable=no-member
-            print('z0 forcing must be implemented')
-            sfu = 0
-            sfv = 0
-        else:
-            raise NotImplementedError('surface_forcing_wind')
-        sfsv = numpy.zeros((ksv, ))
+        def ustar2fluxes(ustar, u, v):
+            """
+            Convert ustar into momentum fluxes
+            :param ustar: ustar value
+            :param u, v: wind components
+            :return: w'u', w'v'
+            """
+            alpha = numpy.arctan2(v, u)
+            return - ustar**2 * numpy.cos(alpha), - ustar**2 * numpy.sin(alpha)
 
         if 'Ts' in state:
             surface_temperature = state['Ts']
@@ -849,9 +832,99 @@ class PhysicsArome(PhysicsBase):
         else:
             latent_heat = self.cst.LsTt - (self.cst.Cpv - self.cst.Ci) * \
                           (surface_temperature - self.cst.Tt)
-        if not (self.case.surface_forcing_temp == 'ts') or not (self.case.surface_forcing_moisture == 'none'):
-            sfrv = slhf / (latent_heat * rho[0 if self.grid.ascending else -1])
-            sfth = sshf / (self.cst.Cpd * rho[0 if self.grid.ascending else -1])
+
+        # Surface schemes output must be: sshf (W m-2) and swf (kg m-2 s-1)
+        sshf_scheme = None
+        swf_scheme = None
+        sfu_scheme = None
+        sfv_scheme = None
+        if self.full_phyex_namel['PHYEX']['SURFACE'] == 'NONE':
+            sshf_scheme = 0.
+            swf_scheme = 0.
+            sfu_scheme = 0.
+            sfv_scheme = 0.
+        elif need_scheme and self.full_phyex_namel['PHYEX']['SURFACE'] == 'WASP':
+            if self.case.surface_forcing_temp == 'none':
+                raise Phyex1DError('surface_forcing_temp == none not implemented by WASP')
+            if self.case.surface_forcing_moisture in ('beta', 'mrsos'):
+                raise Phyex1DError(
+                    'surface_forcing_moisture == beta or mrsos not implemented by WASP')
+            if self.case.surface_forcing_wind != 'none':
+                raise Phyex1DError('surface_forcing_wind != none not implemented by WASP')
+            klevgrd = 0 if self.grid.ascending else -1
+            windgrd = numpy.sqrt(state['u'][klevgrd]**2 + state['v'][klevgrd]**2)
+            exner_surf =  (state['Ps'] / 1.E5) ** (self.cst.Rd / self.cst.Cpd)
+            if 'qv' in self.prognostic_variables:
+                qv_grd = state['rv'][klevgrd] * qdm[klevgrd]
+            else:
+                qv_grd = state['qv'][klevgrd]
+            # TODO, filled precip in precipitation rate (kg/s/m2)
+            precip = 0.
+
+            wave_height = 0.
+            wave_peak_period = 0.
+            result = wasp.WASP_FLUX(
+                state['T'][klevgrd], qv_grd, exner[klevgrd], rho[klevgrd], windgrd, z_mass[klevgrd],
+                z_mass[klevgrd], state['Ts' if self.case.surface_type == 'ocean' else 'Tskin'],
+                exner_surf, state['Ps'], precip, wave_height, wave_peak_period)
+            sshf_scheme, swf_scheme, ustar = result
+            sfu_scheme, sfv_scheme = ustar2fluxes(ustar, state['u'][klevgrd], state['v'][klevgrd])
+        else:
+            raise Phyex1DError('Wrong SURFACE scheme choice')
+
+        if self.case.surface_forcing_temp == 'none':
+            if sshf_scheme is None:
+                raise Phyex1DError("Surface scheme didn't compute sshf")
+        elif self.case.surface_forcing_temp == 'kinematic':
+            raise NotImplementedError('surface_forcing_temp=kinematic')
+        elif self.case.surface_forcing_temp == 'surface_flux':
+            sshf = state['sshf']
+        elif self.case.surface_forcing_temp == 'ts':
+            sshf = sshf_scheme
+        else:
+            raise Phyex1DError('Wrong surface_forcing_temp option')
+
+        if self.case.surface_forcing_moisture == 'none':
+            if swf_scheme is None:
+                raise Phyex1DError("Surface scheme didn't compute swf")
+            swf = swf_scheme
+        elif self.case.surface_forcing_moisture == 'kinematic':
+            raise NotImplementedError('surface_forcing_moisture=kinematic')
+        elif self.case.surface_forcing_moisture == 'surface_flux':
+            # W m-2 --> kg m-2 s-1
+            swf = state['slhf'] / latent_heat
+        elif self.case.surface_forcing_moisture == 'beta':
+            raise NotImplementedError('surface_forcing_moisture=beta')
+        elif self.case.surface_forcing_moisture == 'mrsos':
+            raise NotImplementedError('surface_forcing_moisture=mrsos')
+        else:
+            raise Phyex1DError('Wrong surface_forcing_moisture option')
+
+        if self.case.surface_forcing_wind == 'none':
+            sfu = sfu_scheme
+            sfv = sfv_scheme
+        elif self.case.surface_forcing_wind == 'z0':
+            print('z0 forcing must be implemented')
+            sfu = 0
+            sfv = 0
+        elif self.case.surface_forcing_wind == 'ustar':
+            klevgrd = 0 if self.grid.ascending else -1
+            sfu, sfv = ustar2fluxes(state['ustar'], state['u'][klevgrd], state['v'][klevgrd])
+        else:
+            raise Phyex1DError('Wrong surface_forcing_wind option')
+        sfsv = numpy.zeros((ksv, ))
+
+        # for the water flux, we want w'r' (division by rhod) and not w'q' (division by rho)
+        sfrv = swf / rhodref[0 if self.grid.ascending else -1]  # kg m-2 s-1 --> kg/kg m s-1
+        cp = qdm * (self.cst.Cpd + self.cst.Cpv * rv + self.cst.Cl * (rc + rr) +
+                    self.cst.Ci * (ri + rs + rg + rh))
+        sfth = sshf / (self.cst.Cpd * rho[0 if self.grid.ascending else -1])  # W m-2 --> K m s-1
+
+        state['sfrv'] = sfrv  # kg/kg m s-1 (w'r' mixing ratio)
+        state['swf'] = swf  # kg m-2 s-1
+        state['slhf'] = swf * latent_heat
+        state['sfth'] = sfth  # K m s-1 (w'th' theta)
+        state['sshf'] = sshf  # W m-2
 
         ##################################################################
         ##################################################################
@@ -859,178 +932,189 @@ class PhysicsArome(PhysicsBase):
         ##################################################################
         ##################################################################
 
-        # Updraft properties
-        pthl_up = numpy.zeros((nkt, ))
-        prt_up = numpy.zeros((nkt, ))
-        prv_up = numpy.zeros((nkt, ))
-        prc_up = numpy.zeros((nkt, ))
-        pri_up = numpy.zeros((nkt, ))
-        pu_up = numpy.zeros((nkt, ))
-        pv_up = numpy.zeros((nkt, ))
-        ptke_up = numpy.zeros((nkt, ))
-        pthv_up = numpy.zeros((nkt, ))
-        pw_up = numpy.zeros((nkt, ))
-        pfrac_up = numpy.zeros((nkt, ))
-        pemf = numpy.zeros((nkt, ))
+        if self.full_phyex_namel['PHYEX']['CSCONV'] == 'NONE':
+            flxzthvmf = flxzumf = flxzvmf = numpy.zeros((nkt, ))
+        elif self.full_phyex_namel['PHYEX']['CSCONV'] == 'EDKF':
+            # Updraft properties
+            pthl_up = numpy.zeros((nkt, ))
+            prt_up = numpy.zeros((nkt, ))
+            prv_up = numpy.zeros((nkt, ))
+            prc_up = numpy.zeros((nkt, ))
+            pri_up = numpy.zeros((nkt, ))
+            pu_up = numpy.zeros((nkt, ))
+            pv_up = numpy.zeros((nkt, ))
+            ptke_up = numpy.zeros((nkt, ))
+            pthv_up = numpy.zeros((nkt, ))
+            pw_up = numpy.zeros((nkt, ))
+            pfrac_up = numpy.zeros((nkt, ))
+            pemf = numpy.zeros((nkt, ))
 
-        # Other arrays
-        rm = numpy.array([rv, rc, rr, ri, rs, rg, rh])
-        if self.grid.ascending:
-            z_flux_trunc = z_flux[:-1]
-        else:
-            z_flux_trunc = z_flux[1:]
+            # Other arrays
+            rm = numpy.array([rv, rc, rr, ri, rs, rg, rh])
+            if self.grid.ascending:
+                z_flux_trunc = z_flux[:-1]
+            else:
+                z_flux_trunc = z_flux[1:]
 
-        x = numpy.newaxis
-        result = self._pyphyex.PYSHALLOW_MF(
-                             nijt, nkt, 1 if self.grid.ascending else -1,
-                             0, krr, 2, 3, 0, False, 0, 0,
-                             timestep, dzz[:, x], z_flux_trunc[:, x], rhodj[:, x], rhodref[:, x],
-                             pressure[:, x], exner[:, x],
-                             numpy.ones((nijt, )) * sfth, numpy.ones((nijt, )) * sfrv, theta[:, x],
-                             rm[:krr, :, x], state['u'][:, x], state['v'][:, x], state['tke'][:, x],
-                             sv[:, :, x], pthl_up[:, x], prt_up[:, x], prv_up[:, x], prc_up[:, x],
-                             pri_up[:, x], pu_up[:, x], pv_up[:, x], ptke_up[:, x], pthv_up[:, x],
-                             pw_up[:, x], pfrac_up[:, x], pemf[:, x],
-                             self.dx, self.dy, PRSVS=svs[:, :, x], KBUDGETS=0)
-        result = [array[..., 0] for array in result]
-        (du_mf, dv_mf, dtke_mf, dthl_mf, drt_mf, dsv_mf, sigs_mf,
-         state['rc_MF'], state['ri_MF'], state['CF_MF'], state['HLC_HRC_MF'], state['HLC_HCF_MF'],
-         state['HLI_HRI_MF'], state['HLI_HCF_MF'], state['WEIGHT_MF_CLOUD'],
-         flxzthvmf, flxzthmf, flxzrmf, flxzumf, flxzvmf, flxztkemf) = result[:21]
-        us += du_mf
-        vs += dv_mf
-        tkes += dtke_mf
-        svs += dsv_mf
-        if 'Theta' in self.prognostic_variables:
-            thetas += dthl_mf
+            x = numpy.newaxis
+            result = self._pyphyex.PYSHALLOW_MF(
+                         nijt, nkt, 1 if self.grid.ascending else -1,
+                         0, krr, 2, 3, 0, False, 0, 0,
+                         timestep, dzz[:, x], z_flux_trunc[:, x], rhodj[:, x],
+                         rhodref[:, x], pressure[:, x], exner[:, x],
+                         numpy.ones((nijt, )) * sfth, numpy.ones((nijt, )) * sfrv, theta[:, x],
+                         rm[:krr, :, x], state['u'][:, x], state['v'][:, x], state['tke'][:, x],
+                         sv[:, :, x], pthl_up[:, x], prt_up[:, x], prv_up[:, x], prc_up[:, x],
+                         pri_up[:, x], pu_up[:, x], pv_up[:, x], ptke_up[:, x], pthv_up[:, x],
+                         pw_up[:, x], pfrac_up[:, x], pemf[:, x],
+                         self.dx, self.dy, PRSVS=svs[:, :, x], KBUDGETS=0)
+            result = [array[..., 0] for array in result]
+            (du_mf, dv_mf, dtke_mf, dthl_mf, drt_mf, dsv_mf, sigs_mf,
+             state['rc_MF'], state['ri_MF'], state['CF_MF'], state['HLC_HRC_MF'],
+             state['HLC_HCF_MF'], state['HLI_HRI_MF'], state['HLI_HCF_MF'],
+             state['WEIGHT_MF_CLOUD'],
+             flxzthvmf, flxzthmf, flxzrmf, flxzumf, flxzvmf, flxztkemf) = result[:21]
+            us += du_mf
+            vs += dv_mf
+            tkes += dtke_mf
+            svs += dsv_mf
+            if 'Theta' in self.prognostic_variables:
+                thetas += dthl_mf
+            else:
+                dtemperature += dthl_mf * exner
+            if 'rv' in self.prognostic_variables:
+                rvs += drt_mf
+            else:
+                dqv += drt_mf * qdm
         else:
-            dtemperature += dthl_mf * exner
-        if 'rv' in self.prognostic_variables:
-            rvs += drt_mf
-        else:
-            dqv += drt_mf * qdm
+            raise Phyex1DError('Wrong CSCONV scheme choice')
 
         ##################################################################
         ##################################################################
         #                       TURBULENCE
         ##################################################################
         ##################################################################
-        hlbcx = hlbcy = numpy.array(['cycl', 'cycl'], dtype=('S', 4))
-        kgradientsleo, kgradientsgog, khalo, ksplit = 0, 0, 1, 1
-        ocloudmodiflm = False
-        ksv_lgbeg, ksv_lgend = 0, 0
-        ksv_lima_nr, ksv_lima_ns, ksv_lima_ng, ksv_lima_nh = 0, 0, 0, 0
-        o2d, onomixlg, oflat, ocouples = False, False, False, False
-        oblowsnow, oibm, oflyer, ocompute_src = False, False, True, True
-        rsnow = 1.
-        oocean, odeepoc, odiag_in_run = False, False, False
-        hturblen_cl, helec = 'DELT', 'NONE'
-        dxx = dyy = dzx = dzy = numpy.ndarray((nkt, ))
-        dircosxw = dircosyw = dircoszw = cosslope = 1.
-        sinslope = 0.
-        hgradleo = numpy.ndarray((kgradientsleo, nkt))
-        hgradgog = numpy.ndarray((kgradientsgog, nkt))
-        lengthm, lengthh = numpy.zeros((nkt, )), numpy.zeros((nkt, ))
-        mfmoist = numpy.zeros((nkt, ))
-        cei = numpy.zeros((nkt, ))
-        cei_min, cei_max = 0.001E-06, 0.01E-06
-        coef_ampl_sat = 5.
-        kbudgets = 12
-        bl_depth, sbl_depth = 0., 0.
-        rm = numpy.array([rv, rc, rr, ri, rs, rg, rh])
-        rs = numpy.array([rvs, rcs, rrs, ris, rss, rgs, rhs])
-        thvref = theta * (1 + rv * self.cst.Rv / self.cst.Rd) / (1 + rm.sum(axis=0))
-        nvext_turb = 1
-        krrl = 2
-        krri = 3 if krr == 6 else 4
-        def x(array, reverse=False):
-            """Extend vertical dimension and add horizontal one"""
-            if not reverse:
-                try:
-                    len(array)
-                    if len(array.shape) == 1:
-                        new = numpy.ndarray((array.shape[0] + 2, ))
-                        new[1:-1] = array
-                        new[0] = new[1]
-                        new[-1] = new[-2]
-                        return new[:, numpy.newaxis]
+        if self.full_phyex_namel['PHYEX']['CTURB'] == 'NONE':
+            pass
+        elif self.full_phyex_namel['PHYEX']['CTURB'] == 'TKEL':
+            hlbcx = hlbcy = numpy.array(['cycl', 'cycl'], dtype=('S', 4))
+            kgradientsleo, kgradientsgog, khalo, ksplit = 0, 0, 1, 1
+            ocloudmodiflm = False
+            ksv_lgbeg, ksv_lgend = 0, 0
+            ksv_lima_nr, ksv_lima_ns, ksv_lima_ng, ksv_lima_nh = 0, 0, 0, 0
+            o2d, onomixlg, oflat, ocouples = False, False, False, False
+            oblowsnow, oibm, oflyer, ocompute_src = False, False, True, True
+            rsnow = 1.
+            oocean, odeepoc, odiag_in_run = False, False, False
+            hturblen_cl, helec = 'DELT', 'NONE'
+            dxx = dyy = dzx = dzy = numpy.ndarray((nkt, ))
+            dircosxw = dircosyw = dircoszw = cosslope = 1.
+            sinslope = 0.
+            hgradleo = numpy.ndarray((kgradientsleo, nkt))
+            hgradgog = numpy.ndarray((kgradientsgog, nkt))
+            lengthm, lengthh = numpy.zeros((nkt, )), numpy.zeros((nkt, ))
+            mfmoist = numpy.zeros((nkt, ))
+            cei = numpy.zeros((nkt, ))
+            cei_min, cei_max = 0.001E-06, 0.01E-06
+            coef_ampl_sat = 5.
+            kbudgets = 12
+            bl_depth, sbl_depth = 0., 0.
+            rm = numpy.array([rv, rc, rr, ri, rs, rg, rh])
+            rs = numpy.array([rvs, rcs, rrs, ris, rss, rgs, rhs])
+            thvref = theta * (1 + rv * self.cst.Rv / self.cst.Rd) / (1 + rm.sum(axis=0))
+            nvext_turb = 1
+            krrl = 2
+            krri = 3 if krr == 6 else 4
+            def x(array, reverse=False):
+                """Extend vertical dimension and add horizontal one"""
+                if not reverse:
+                    try:
+                        len(array)
+                        if len(array.shape) == 1:
+                            new = numpy.ndarray((array.shape[0] + 2, ))
+                            new[1:-1] = array
+                            new[0] = new[1]
+                            new[-1] = new[-2]
+                            return new[:, numpy.newaxis]
+                        if len(array.shape) == 2:
+                            new = numpy.ndarray((array.shape[0], array.shape[1] + 2))
+                            new[:, 1:-1] = array
+                            new[:, 0] = new[:, 1]
+                            new[:, -1] = new[:, -2]
+                            return new[:, :, numpy.newaxis]
+                    except TypeError:
+                        return numpy.ones((nijt, )) * array
+                    raise ValueError(type(array), str(array))
+                else:
+                    if len(array.shape) == 3:
+                        return array[:, 1:-1, 0]
                     if len(array.shape) == 2:
-                        new = numpy.ndarray((array.shape[0], array.shape[1] + 2))
-                        new[:, 1:-1] = array
-                        new[:, 0] = new[:, 1]
-                        new[:, -1] = new[:, -2]
-                        return new[:, :, numpy.newaxis]
-                except TypeError:
-                    return numpy.ones((nijt, )) * array
-                raise ValueError(type(array), str(array))
+                        return array[1:-1, 0]
+
+            us = us * rhodj
+            vs = vs * rhodj
+            ws = ws * rhodj
+            thetas = thetas * rhodj
+            tkes = tkes * rhodj
+            rs = rs * rhodj[numpy.newaxis, :]
+            svs = svs * rhodj
+            if self.grid.ascending:
+                z_flux_trunc = z_flux[:-1]
             else:
-                if len(array.shape) == 3:
-                    return array[:, 1:-1, 0]
-                if len(array.shape) == 2:
-                    return array[1:-1, 0]
+                z_flux_trunc = z_flux[1:]
 
-        us = us * rhodj
-        vs = vs * rhodj
-        ws = ws * rhodj
-        thetas = thetas * rhodj
-        tkes = tkes * rhodj
-        rs = rs * rhodj[numpy.newaxis, :]
-        svs = svs * rhodj
-        if self.grid.ascending:
-            z_flux_trunc = z_flux[:-1]
+            result = self._pyphyex.PYTURB(
+                    nijt, nkt + 2 * nvext_turb, 1 if self.grid.ascending else -1, nvext_turb,
+                    krr, krrl, krri, hlbcx, hlbcy, kgradientsleo, kgradientsgog,
+                    khalo, ksplit, ocloudmodiflm, ksv, ksv_lgbeg, ksv_lgend,
+                    ksv_lima_nr, ksv_lima_ns, ksv_lima_ng, ksv_lima_nh,
+                    o2d, onomixlg, oflat, ocouples, oblowsnow, oibm, oflyer,
+                    ocompute_src, rsnow, oocean, odeepoc, odiag_in_run,
+                    hturblen_cl, self.full_phyex_namel['PHYEX']['CMICRO'], helec, timestep, 999,
+                    x(dxx), x(dyy), x(dzz), x(dzx), x(dzy), x(z_flux_trunc),
+                    x(dircosxw), x(dircosyw), x(dircoszw), x(cosslope), x(sinslope),
+                    x(rhodj), x(thvref), x(hgradleo), x(hgradgog), x(state['Zs']),
+                    x(sfth), x(sfrv), sfsv[:, numpy.newaxis], x(sfu), x(sfv),
+                    x(pressure), x(state['u']), x(state['v']), x(state['w']),
+                    x(state['tke']), x(sv), x(src), x(lengthm), x(lengthh), x(mfmoist),
+                    x(bl_depth), x(sbl_depth), x(cei), cei_min, cei_max, coef_ampl_sat,
+                    x(theta), x(rm[:krr, ...]), x(us), x(vs), x(ws), x(thetas),
+                    x(rs[:krr, ...]), x(svs), x(tkes),
+                    x(flxzthvmf), x(flxzumf), x(flxzvmf),
+                    kbudgets, missingOUT=['PEDR', 'PLEM', 'PDPMF', 'PTPMF',
+                    'PTR', 'PDISS', 'PIBM_XMUT', 'PCURRENT_TKE_DISS'])
+
+            result = [x(array, reverse=True) for array in result]
+            (_, _, _, _, us, vs, ws, thetas, rs, svs, tkes, sigs_turb, _,
+             _, _, _, _, _, _, _, _, dthetal_turb, drt_turb, _) = result
+
+            us = us / rhodj
+            vs = vs /rhodj
+            ws = ws / rhodj
+            thetas = thetas / rhodj
+            tkes = tkes / rhodj
+            dthetal_turb = dthetal_turb / rhodj
+            drt_turb = drt_turb / rhodj
+            rs = rs / rhodj[numpy.newaxis, :]
+            svs = svs / rhodj
+
+            if 'T' in self.prognostic_variables:
+                dtemperature += dthetal_turb * exner
+            if 'qv' in self.prognostic_variables:
+                print('We must take into account tendencies on rc and ri. Here and in arome')
+                dqv += drt_turb * qdm
+            else:
+                rvs = rs[0]
+                rcs = rs[1]
+                rrs = rs[2]
+                ris = rs[3]
+                rss = rs[4]
+                rgs = rs[5]
+                if krr == 7:
+                    rhs = rs[6]
+            state['sigs'] = numpy.sqrt(sigs_mf**2 + sigs_turb**2)
         else:
-            z_flux_trunc = z_flux[1:]
-
-        result = self._pyphyex.PYTURB(
-                nijt, nkt + 2 * nvext_turb, 1 if self.grid.ascending else -1, nvext_turb,
-                krr, krrl, krri, hlbcx, hlbcy, kgradientsleo, kgradientsgog,
-                khalo, ksplit, ocloudmodiflm, ksv, ksv_lgbeg, ksv_lgend,
-                ksv_lima_nr, ksv_lima_ns, ksv_lima_ng, ksv_lima_nh,
-                o2d, onomixlg, oflat, ocouples, oblowsnow, oibm, oflyer,
-                ocompute_src, rsnow, oocean, odeepoc, odiag_in_run,
-                hturblen_cl, self.full_phyex_namel['PHYEX']['CMICRO'], helec, timestep, 999,
-                x(dxx), x(dyy), x(dzz), x(dzx), x(dzy), x(z_flux_trunc),
-                x(dircosxw), x(dircosyw), x(dircoszw), x(cosslope), x(sinslope),
-                x(rhodj), x(thvref), x(hgradleo), x(hgradgog), x(state['Zs']),
-                x(sfth), x(sfrv), sfsv[:, numpy.newaxis], x(sfu), x(sfv),
-                x(pressure), x(state['u']), x(state['v']), x(state['w']),
-                x(state['tke']), x(sv), x(src), x(lengthm), x(lengthh), x(mfmoist),
-                x(bl_depth), x(sbl_depth), x(cei), cei_min, cei_max, coef_ampl_sat,
-                x(theta), x(rm[:krr, ...]), x(us), x(vs), x(ws), x(thetas),
-                x(rs[:krr, ...]), x(svs), x(tkes),
-                x(flxzthvmf), x(flxzumf), x(flxzvmf),
-                kbudgets, missingOUT=['PEDR', 'PLEM', 'PDPMF', 'PTPMF',
-                'PTR', 'PDISS', 'PIBM_XMUT', 'PCURRENT_TKE_DISS'])
-
-        result = [x(array, reverse=True) for array in result]
-        (_, _, _, _, us, vs, ws, thetas, rs, svs, tkes, sigs_turb, _,
-         _, _, _, _, _, _, _, _, dthetal_turb, drt_turb, _) = result
-
-        us = us / rhodj
-        vs = vs /rhodj
-        ws = ws / rhodj
-        thetas = thetas / rhodj
-        tkes = tkes / rhodj
-        dthetal_turb = dthetal_turb / rhodj
-        drt_turb = drt_turb / rhodj
-        rs = rs / rhodj[numpy.newaxis, :]
-        svs = svs / rhodj
-
-        if 'T' in self.prognostic_variables:
-            dtemperature += dthetal_turb * exner
-        if 'qv' in self.prognostic_variables:
-            print('We must take into account tendencies on rc and ri. Here and in arome')
-            dqv += drt_turb * qdm
-        else:
-            rvs = rs[0]
-            rcs = rs[1]
-            rrs = rs[2]
-            ris = rs[3]
-            rss = rs[4]
-            rgs = rs[5]
-            if krr == 7:
-                rhs = rs[6]
-        state['sigs'] = numpy.sqrt(sigs_mf**2 + sigs_turb**2)
+            raise Phyex1DError('Wrong CTURB scheme choice')
 
         ##################################################################
         ##################################################################

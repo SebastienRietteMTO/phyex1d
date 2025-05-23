@@ -95,8 +95,8 @@ Collaboration diagram for phyex1d.physics.PhysicsBase:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a338808776d52bf3430f45fba29a8451c" id="r_a338808776d52bf3430f45fba29a8451c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classphyex1d_1_1physics_1_1PhysicsBase.html#a338808776d52bf3430f45fba29a8451c">__init__</a> (self, dt, method, name, tag, inputfile, grid, prognostic_variables, pyphyex=None, namel=None, dx=0, dy=0)</td></tr>
-<tr class="separator:a338808776d52bf3430f45fba29a8451c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afd1dbe019342946345c2214ad5eab5d7" id="r_afd1dbe019342946345c2214ad5eab5d7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classphyex1d_1_1physics_1_1PhysicsBase.html#afd1dbe019342946345c2214ad5eab5d7">__init__</a> (self, dt, method, name, tag, inputfile, grid, prognostic_variables, pyphyex=None, pyecrad=None, namel=None, dx=0, dy=0, attrs=None)</td></tr>
+<tr class="separator:afd1dbe019342946345c2214ad5eab5d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a27e7f11946f69b7bc711556441df6fac" id="r_a27e7f11946f69b7bc711556441df6fac"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classphyex1d_1_1physics_1_1PhysicsBase.html#a27e7f11946f69b7bc711556441df6fac">setup</a> (self, init_state, duration)</td></tr>
 <tr class="separator:a27e7f11946f69b7bc711556441df6fac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7949f62aadc1a662deb13031a05efe3b" id="r_a7949f62aadc1a662deb13031a05efe3b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classphyex1d_1_1physics_1_1PhysicsBase.html#a7949f62aadc1a662deb13031a05efe3b">finalize</a> (self)</td></tr>
@@ -126,9 +126,15 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:aa6003ba19e13bbb67e3449395c2ba587" id="r_aa6003ba19e13bbb67e3449395c2ba587"><td class="memItemLeft" align="right" valign="top"><a id="aa6003ba19e13bbb67e3449395c2ba587" name="aa6003ba19e13bbb67e3449395c2ba587"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>pyphyex</b></td></tr>
 <tr class="separator:aa6003ba19e13bbb67e3449395c2ba587"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af1fbe110728f2a9ee1744c3aea596231" id="r_af1fbe110728f2a9ee1744c3aea596231"><td class="memItemLeft" align="right" valign="top"><a id="af1fbe110728f2a9ee1744c3aea596231" name="af1fbe110728f2a9ee1744c3aea596231"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>pyecrad</b></td></tr>
+<tr class="separator:af1fbe110728f2a9ee1744c3aea596231"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a00ddc7f66ad3739b5b65780e0f313496" id="r_a00ddc7f66ad3739b5b65780e0f313496"><td class="memItemLeft" align="right" valign="top"><a id="a00ddc7f66ad3739b5b65780e0f313496" name="a00ddc7f66ad3739b5b65780e0f313496"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>namel</b></td></tr>
 <tr class="separator:a00ddc7f66ad3739b5b65780e0f313496"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4d1fb7d4401cc81763d06835bd4e0265" id="r_a4d1fb7d4401cc81763d06835bd4e0265"><td class="memItemLeft" align="right" valign="top"><a id="a4d1fb7d4401cc81763d06835bd4e0265" name="a4d1fb7d4401cc81763d06835bd4e0265"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>full_phyex_namel</b></td></tr>
+<tr class="separator:a4d1fb7d4401cc81763d06835bd4e0265"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a11d4432c7173bc1aa81b29fe530472bd" id="r_a11d4432c7173bc1aa81b29fe530472bd"><td class="memItemLeft" align="right" valign="top"><a id="a11d4432c7173bc1aa81b29fe530472bd" name="a11d4432c7173bc1aa81b29fe530472bd"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>dx</b></td></tr>
 <tr class="separator:a11d4432c7173bc1aa81b29fe530472bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -156,6 +162,9 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:afcc0d0f5c8df1fb7ed5ab308abef11e7" id="r_afcc0d0f5c8df1fb7ed5ab308abef11e7"><td class="memItemLeft" align="right" valign="top"><a id="afcc0d0f5c8df1fb7ed5ab308abef11e7" name="afcc0d0f5c8df1fb7ed5ab308abef11e7"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>_pyphyex</b></td></tr>
 <tr class="separator:afcc0d0f5c8df1fb7ed5ab308abef11e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a338dfaab16babdb2a532ecf652be2f82" id="r_a338dfaab16babdb2a532ecf652be2f82"><td class="memItemLeft" align="right" valign="top"><a id="a338dfaab16babdb2a532ecf652be2f82" name="a338dfaab16babdb2a532ecf652be2f82"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>_pyecrad</b></td></tr>
+<tr class="separator:a338dfaab16babdb2a532ecf652be2f82"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af0f8d0cc11c6413e4668ecb39426fee2" id="r_af0f8d0cc11c6413e4668ecb39426fee2"><td class="memItemLeft" align="right" valign="top"><a id="af0f8d0cc11c6413e4668ecb39426fee2" name="af0f8d0cc11c6413e4668ecb39426fee2"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>_dt</b></td></tr>
 <tr class="separator:af0f8d0cc11c6413e4668ecb39426fee2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -164,8 +173,8 @@ Protected Attributes</h2></td></tr>
 <div class="textblock"><pre class="fragment">Implementation of the forcing
 This class is not intended to be used directly
 </pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a338808776d52bf3430f45fba29a8451c" name="a338808776d52bf3430f45fba29a8451c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a338808776d52bf3430f45fba29a8451c">&#9670;&#160;</a></span>__init__()</h2>
+<a id="afd1dbe019342946345c2214ad5eab5d7" name="afd1dbe019342946345c2214ad5eab5d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd1dbe019342946345c2214ad5eab5d7">&#9670;&#160;</a></span>__init__()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -228,6 +237,12 @@ This class is not intended to be used directly
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>pyecrad</em> = <code>None</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
           <td class="paramname"><em>namel</em> = <code>None</code>, </td>
         </tr>
         <tr>
@@ -240,7 +255,13 @@ This class is not intended to be used directly
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>dy</em> = <code>0</code>&#160;</td>
+          <td class="paramname"><em>dy</em> = <code>0</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>attrs</em> = <code>None</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -257,10 +278,12 @@ This class is not intended to be used directly
 :param grid: Grid object instance
 :param prognostic_variable: List of prognostic variables
 :param phyex: path to the pyphyex.py file generated by the PHYEX package
+:param pyecrad: path to the pyecrad.py file
 :param namel: namelist to use: as a file name or a dictionnary
 :param dx, dy: mesh size
+:param attrs: dictionnary holding caes attributes to override
 </pre> 
-<p>Reimplemented in <a class="el" href="classphyex1d_1_1physics_1_1PhysicsAromeTQ.html#a1977d6d503b252fd1326141f73001261">phyex1d.physics.PhysicsAromeTQ</a>, <a class="el" href="classphyex1d_1_1physics_1_1PhysicsAromeThetaR.html#a8405a1c1404024a33b09b54f9606b192">phyex1d.physics.PhysicsAromeThetaR</a>, <a class="el" href="classphyex1d_1_1physics_1_1PhysicsForcingTQ.html#af226f62a7c7d49cc62af25ba3d4181a7">phyex1d.physics.PhysicsForcingTQ</a>, and <a class="el" href="classphyex1d_1_1physics_1_1PhysicsForcingThetaR.html#aaec889bd42dd74e1f01b1ce08c729fbc">phyex1d.physics.PhysicsForcingThetaR</a>.</p>
+<p>Reimplemented in <a class="el" href="classphyex1d_1_1physics_1_1PhysicsAromeTQ.html#a8038393af2a078c5e45fa9f0f2e67d1e">phyex1d.physics.PhysicsAromeTQ</a>, <a class="el" href="classphyex1d_1_1physics_1_1PhysicsAromeThetaR.html#a29c3e44c84497e2d5c99dae02883afa7">phyex1d.physics.PhysicsAromeThetaR</a>, <a class="el" href="classphyex1d_1_1physics_1_1PhysicsForcingTQ.html#a5a8714f96476700f44de175ad86952a3">phyex1d.physics.PhysicsForcingTQ</a>, and <a class="el" href="classphyex1d_1_1physics_1_1PhysicsForcingThetaR.html#ab77dddf6e4fcb78f5b9b730cfea4199f">phyex1d.physics.PhysicsForcingThetaR</a>.</p>
 
 </div>
 </div>

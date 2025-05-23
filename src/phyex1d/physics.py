@@ -342,7 +342,8 @@ class PhysicsBase(PPPY):
             init_state[var] = numpy.zeros(init_state['P'].shape)
 
         # Initial value
-        init_state['CF'] = numpy.zeros(init_state['P'].shape)
+        for var in ('CF', 'dt_rad_lw', 'dt_rad_sw'):
+            init_state[var] = numpy.zeros(init_state['P'].shape)
         for var in ('lw_up', 'lw_dn', 'sw_up', 'sw_dn'):
             init_state[var] = numpy.zeros((init_state['P'].shape[0] + 1, ))
         for var in ('sfrv', 'swf', 'sfth', 'sshf', 'slhf'):
@@ -452,8 +453,10 @@ class PhysicsBase(PPPY):
         if self.case.nudging_va == 1:
             raise NotImplementedError('Nudging v')
         if self.case.forc_wa == 1:
+            # dX/dt = - w dX/dz
             print('Vertical velocity forcing must be implemented')
         if self.case.forc_geo == 1:
+            #du/dt = +f * vgeo; dv/dt = -f * ugeo
             print('geostrophic forcing must be implemented')
 
         # Surface
@@ -560,6 +563,10 @@ class PhysicsArome(PhysicsBase):
             rg = state['qg'] / qdm
             rh = state['qh'] / qdm
         else:
+            qdm = 1.
+            for var in ('rv', 'rc', 'rr', 'ri', 'rs', 'rg', 'rh'):
+                qdm += state[var]
+            qdm = 1. / qdm
             rv = state['rv']
             rc = state['rc']
             rr = state['rr']
@@ -650,10 +657,6 @@ class PhysicsArome(PhysicsBase):
             ri = ris * timestep
 
             if 'qv' in self.prognostic_variables:
-                qdm = 1.
-                for var in (rv, rc, rr, ri, rs, rg, rh):
-                    qdm += var
-                qdm = 1. / qdm
                 qv = rv * qdm
                 qc = rc * qdm
                 qr = rr * qdm
@@ -783,16 +786,20 @@ class PhysicsArome(PhysicsBase):
                     lw_emissivity[:, x], q[::order, x], o3[::order, x])
                 result = [array[::order, 0] for array in result]
                 state['lw_up'], state['lw_dn'], state['sw_up'], state['sw_dn'] = result
-                net = state['lw_dn'] + state['sw_dn'] - (state['lw_up'] + state['sw_up'])
                 cp = qdm * (self.cst.Cpd +
                             self.cst.Cpv * rv +
                             self.cst.Cl * (rc + rr) +
                             self.cst.Ci * (ri + rs + rg + rh))
-                dt_rad = numpy.diff(net) / (rho * cp * dzz)
+                dt_rad_lw = -numpy.diff((state['lw_dn'] - state['lw_up'])[::order])[::order] / \
+                            (rho * cp * dzz)
+                dt_rad_sw = -numpy.diff((state['sw_dn'] - state['sw_up'])[::order])[::order] / \
+                            (rho * cp * dzz)
+                state['dt_rad_lw'] = dt_rad_lw
+                state['dt_rad_sw'] = dt_rad_sw
                 if 'T' in self.prognostic_variables:
-                    dtemperature += dt_rad
+                    dtemperature += dt_rad_lw + dt_rad_sw
                 else:
-                    thetas += dt_rad * exner
+                    thetas += (dt_rad_lw + dt_rad_sw) * exner
             else:
                 raise Phyex1DError('Wrong RAD scheme choice')
 
@@ -802,9 +809,10 @@ class PhysicsArome(PhysicsBase):
         #                       SURFACE
         ##################################################################
         ##################################################################
+        klevgrd = 0 if self.grid.ascending else -1
         if self.case.surface_forcing_temp in ('none', 'ts') or \
            self.case.surface_forcing_moisture in ('none', 'beta', 'mrsos') or \
-           self.case.surface_forcing_wind in ('none', 'z0', 'ustar'):
+           self.case.surface_forcing_wind in ('none', ):
             need_scheme = True
         else:
             need_scheme = False
@@ -843,7 +851,9 @@ class PhysicsArome(PhysicsBase):
             swf_scheme = 0.
             sfu_scheme = 0.
             sfv_scheme = 0.
-        elif need_scheme and self.full_phyex_namel['PHYEX']['SURFACE'] == 'WASP':
+        elif not need_scheme:
+            pass
+        elif self.full_phyex_namel['PHYEX']['SURFACE'] == 'WASP':
             if self.case.surface_forcing_temp == 'none':
                 raise Phyex1DError('surface_forcing_temp == none not implemented by WASP')
             if self.case.surface_forcing_moisture in ('beta', 'mrsos'):
@@ -851,7 +861,6 @@ class PhysicsArome(PhysicsBase):
                     'surface_forcing_moisture == beta or mrsos not implemented by WASP')
             if self.case.surface_forcing_wind != 'none':
                 raise Phyex1DError('surface_forcing_wind != none not implemented by WASP')
-            klevgrd = 0 if self.grid.ascending else -1
             windgrd = numpy.sqrt(state['u'][klevgrd]**2 + state['v'][klevgrd]**2)
             exner_surf =  (state['Ps'] / 1.E5) ** (self.cst.Rd / self.cst.Cpd)
             if 'qv' in self.prognostic_variables:
@@ -904,16 +913,16 @@ class PhysicsArome(PhysicsBase):
             sfu = sfu_scheme
             sfv = sfv_scheme
         elif self.case.surface_forcing_wind == 'z0':
-            print('z0 forcing must be implemented')
-            sfu = 0
-            sfv = 0
+            ustar = numpy.sqrt(state['u'][klevgrd]**2 + state['v'][klevgrd]**2) * \
+                    self.cst.Karman / numpy.log(z_mass[klevgrd] / state['z0'])
+            sfu, sfv = ustar2fluxes(ustar, state['u'][klevgrd], state['v'][klevgrd])
         elif self.case.surface_forcing_wind == 'ustar':
-            klevgrd = 0 if self.grid.ascending else -1
             sfu, sfv = ustar2fluxes(state['ustar'], state['u'][klevgrd], state['v'][klevgrd])
         else:
             raise Phyex1DError('Wrong surface_forcing_wind option')
         sfsv = numpy.zeros((ksv, ))
 
+        # The turbulence scheme waits for w'r' and w'th'
         # for the water flux, we want w'r' (division by rhod) and not w'q' (division by rho)
         sfrv = swf / rhodref[0 if self.grid.ascending else -1]  # kg m-2 s-1 --> kg/kg m s-1
         cp = qdm * (self.cst.Cpd + self.cst.Cpv * rv + self.cst.Cl * (rc + rr) +
@@ -922,7 +931,7 @@ class PhysicsArome(PhysicsBase):
 
         state['sfrv'] = sfrv  # kg/kg m s-1 (w'r' mixing ratio)
         state['swf'] = swf  # kg m-2 s-1
-        state['slhf'] = swf * latent_heat
+        state['slhf'] = swf * latent_heat  # W m-2 using Lv or Ls depending on temperature °C sign
         state['sfth'] = sfth  # K m s-1 (w'th' theta)
         state['sshf'] = sshf  # W m-2
 

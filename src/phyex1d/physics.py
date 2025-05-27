@@ -294,7 +294,9 @@ class PhysicsBase(PPPY):
                     'sza': 'sza',
                     'o3': 'o3',
                     'lat': 'lat',
-                    'lon': 'lon'
+                    'lon': 'lon',
+                    'u_geo': 'ug',
+                    'v_geo': 'vg',
                   }
 
         with netCDF4.Dataset(self.inputfile, 'r') as nc:
@@ -457,7 +459,13 @@ class PhysicsBase(PPPY):
             print('Vertical velocity forcing must be implemented')
         if self.case.forc_geo == 1:
             #du/dt = +f * vgeo; dv/dt = -f * ugeo
-            print('geostrophic forcing must be implemented')
+            interp_ug, nc = get_interpolator('ug', nc)
+            interp_vg, nc = get_interpolator('vg', nc)
+            f = 2. * self.cst.omega * numpy.sin(numpy.radians(state['lat']))
+            state['u'] += +f * (state['v'] - interp_vg(
+                numpy.column_stack(([time] * len(output_coord), output_coord)))) * timestep
+            state['v'] += -f * (state['u'] - interp_ug(
+                numpy.column_stack(([time] * len(output_coord), output_coord)))) * timestep
 
         # Surface
         if 'Ts' in state:

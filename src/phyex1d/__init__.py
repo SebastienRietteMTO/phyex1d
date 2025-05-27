@@ -16,6 +16,7 @@ class Cst():  # pylint: disable=too-few-public-methods,too-many-instance-attribu
     """Empty class to store constants"""
     def __init__(self):
         # pylint: disable=invalid-name
+        self.pi = 2. * numpy.arcsin(1.)
         self.Karman = 0.4
         self.Planck = 6.6260755E-34
         self.boltz = 1.380658E-23
@@ -23,6 +24,10 @@ class Cst():  # pylint: disable=too-few-public-methods,too-many-instance-attribu
 
         self.P0 = 100000.
         self.g = 9.80665
+        self.day = 86400.
+        self.siyear = 365.25 * self.day * 2. * self.pi / 6.283076
+        self.siday = self.day / (1. + self.day / self.siyear)
+        self.omega = 2. * self.pi / self.siday
 
         self.md= 28.9644e-3
         self.mv= 18.0153E-3

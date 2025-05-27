@@ -392,6 +392,7 @@ class PhysicsBase(PPPY):
             return interp, nc
 
         time = timestep * timestep_number
+        # All forcing variable are taken on mass levels
         if self.grid.kind in ('H', 'hybridH'):
             output_coord = self.grid.get_altitude('MASS', state, self.prognostic_variables)
         elif self.grid.kind in ('P', 'hybridP'):
@@ -456,7 +457,17 @@ class PhysicsBase(PPPY):
             raise NotImplementedError('Nudging v')
         if self.case.forc_wa == 1:
             # dX/dt = - w dX/dz
-            print('Vertical velocity forcing must be implemented')
+            interp, nc = get_interpolator('wa', nc)
+            w = interp(numpy.column_stack(([time] * len(output_coord),
+                                          output_coord)))
+            z_mass = self.grid.get_altitude('MASS', state, self.prognostic_variables)
+            for var in [var for var in self.prognostic_variables if var != 'w']:
+                grad = numpy.gradient(state[var], z_mass)
+                state[var] += - grad * w * timestep
+                if var in ('qv', 'qc', 'qr', 'qi', 'qs', 'qg', 'qh',
+                           'rv', 'rc', 'rr', 'ri', 'rs', 'rg', 'rh',
+                           'tke'):
+                    state[var] = numpy.maximum(state[var], 0.)
         if self.case.forc_geo == 1:
             #du/dt = +f * vgeo; dv/dt = -f * ugeo
             interp_ug, nc = get_interpolator('ug', nc)
@@ -521,8 +532,10 @@ class PhysicsArome(PhysicsBase):
         :returns: a 'state' dictionary containing variable values after time integration
         """
 
-        # Save initial state
+        # Save initial state and control
         state0 = {k: v.copy() for (k, v) in state.items()}
+        state['tke'] = numpy.maximum(self.full_phyex_namel['NAM_TURBn']['XTKEMIN'],
+                                     state['tke'])
 
         # Preparation: grid and other dimensions
         pressure = self.grid.get_pressure('MASS', state, self.prognostic_variables)

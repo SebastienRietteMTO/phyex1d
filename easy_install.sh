@@ -73,7 +73,7 @@ cd $PWD
 . phyex1d.env/bin/activate
 phyex1d DEPHY-SCM/ARMCU/REF/ARMCU_REF_SCM_driver.nc \\
         --exp dt=60 class=PhysicsAromeThetaR grid=L90mesonh \\
-              pyecrad=$PWD/ecrad/driver/pyecrad.py \\
+              pyecrad=$PWD/ecrad/pyecrad/__init__.py \\
         --plot rv.png rv y_var=P \\
         --plot qc.png qc y_var=P vmin=0. vmax=5.E-5 \\
         --plot T.png T y_var=P \\

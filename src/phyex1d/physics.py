@@ -1050,6 +1050,7 @@ class PhysicsArome(PhysicsBase):
             nvext_turb = 1
             krrl = 2
             krri = 3 if krr == 6 else 4
+            psea_ucu = psea_vcu = 0.
             def x(array, reverse=False):
                 """Extend vertical dimension and add horizontal one"""
                 if not reverse:
@@ -1100,6 +1101,7 @@ class PhysicsArome(PhysicsBase):
                     x(dircosxw), x(dircosyw), x(dircoszw), x(cosslope), x(sinslope),
                     x(rhodj), x(thvref), x(hgradleo), x(hgradgog), x(state['Zs']),
                     x(sfth), x(sfrv), sfsv[:, numpy.newaxis], x(sfu), x(sfv),
+                    x(psea_ucu), x(psea_vcu),
                     x(pressure), x(state['u']), x(state['v']), x(state['w']),
                     x(state['tke']), x(sv), x(src), x(lengthm), x(lengthh), x(mfmoist),
                     x(bl_depth), x(sbl_depth), x(cei), cei_min, cei_max, coef_ampl_sat,

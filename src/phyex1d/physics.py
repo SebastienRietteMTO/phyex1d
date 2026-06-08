@@ -1183,20 +1183,25 @@ class PhysicsArome(PhysicsBase):
                                  MISSING, MISSING, MISSING, MISSING, MISSING,
                                  MISSING, MISSING)
                                  
-            #result = [array[:, 0] for array in result]
-            #(state['ni'], hlc_hrc, hlc_hcf, hli_hri, hli_hcf,
-            # thetas, prs, _, _, _, _, _, _, _,
-            # _, _, _, _, _, _, _, _, _, _, _, _, _, _) = result
+            (state['ni'], hlc_hrc, hlc_hcf, hli_hri, hli_hcf,
+             thetas, prs, _, _, _, _, _, _, _, _, _, ) = result
+            state['ni'] = state['ni'][:, 0]
+            hlc_hrc = hlc_hrc[:, 0]
+            hlc_hcf = hlc_hcf[:, 0]
+            hli_hri = hli_hri[:, 0]
+            hli_hcf = hli_hcf[:, 0]
+            thetas = thetas[:, 0]
 
             theta = thetas * timestep
             temperature = theta * exner
-            rv = prs[0] * timestep
-            rc = prs[0] * timestep
-            rr = prs[0] * timestep
-            ri = prs[0] * timestep
-            rs = prs[0] * timestep
-            rg = prs[0] * timestep
-            rh = prs[0] * timestep
+            rv = prs[0,:,0] * timestep
+            rc = prs[1,:,0] * timestep
+            rr = prs[2,:,0] * timestep
+            ri = prs[3,:,0] * timestep
+            rs = prs[4,:,0] * timestep
+            rg = prs[5,:,0] * timestep
+            if krr == 7:
+                rh = prs[6,:,0] * timestep
             
             if 'qv' in self.prognostic_variables:
                 qv = rv * qdm

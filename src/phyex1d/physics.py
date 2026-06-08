@@ -294,6 +294,7 @@ class PhysicsBase(PPPY):
                     'lon': 'lon',
                     'u_geo': 'ug',
                     'v_geo': 'vg',
+                    'ni': 'ni',
                   }
 
         with netCDF4.Dataset(self.inputfile, 'r') as nc:
@@ -336,7 +337,7 @@ class PhysicsBase(PPPY):
         self.add_conversions(init_state)
 
         # Arrays needed to keep memory from one timestep to the other
-        for var in ('sigs', 'WEIGHT_MF_CLOUD', 'CF_MF', 'rc_MF', 'ri_MF',
+        for var in ('ni', 'sigs', 'WEIGHT_MF_CLOUD', 'CF_MF', 'rc_MF', 'ri_MF',
                     'HLC_HRC_MF', 'HLC_HCF_MF', 'HLI_HRI_MF', 'HLI_HCF_MF'):
             init_state[var] = numpy.zeros(init_state['P'].shape)
 
@@ -1044,9 +1045,9 @@ class PhysicsArome(PhysicsBase):
             coef_ampl_sat = 5.
             kbudgets = 12
             bl_depth, sbl_depth = 0., 0.
-            rm = numpy.array([rv, rc, rr, ri, rs, rg, rh])
-            rs = numpy.array([rvs, rcs, rrs, ris, rss, rgs, rhs])
-            thvref = theta * (1 + rv * self.cst.Rv / self.cst.Rd) / (1 + rm.sum(axis=0))
+            prm = numpy.array([rv, rc, rr, ri, rs, rg, rh])
+            prs = numpy.array([rvs, rcs, rrs, ris, rss, rgs, rhs])
+            thvref = theta * (1 + rv * self.cst.Rv / self.cst.Rd) / (1 + prm.sum(axis=0))
             nvext_turb = 1
             krrl = 2
             krri = 3 if krr == 6 else 4
@@ -1082,7 +1083,7 @@ class PhysicsArome(PhysicsBase):
             ws = ws * rhodj
             thetas = thetas * rhodj
             tkes = tkes * rhodj
-            rs = rs * rhodj[numpy.newaxis, :]
+            prs = prs * rhodj[numpy.newaxis, :]
             svs = svs * rhodj
             if self.grid.ascending:
                 z_flux_trunc = z_flux[:-1]
@@ -1105,14 +1106,14 @@ class PhysicsArome(PhysicsBase):
                     x(pressure), x(state['u']), x(state['v']), x(state['w']),
                     x(state['tke']), x(sv), x(src), x(lengthm), x(lengthh), x(mfmoist),
                     x(bl_depth), x(sbl_depth), x(cei), cei_min, cei_max, coef_ampl_sat,
-                    x(theta), x(rm[:krr, ...]), x(us), x(vs), x(ws), x(thetas),
-                    x(rs[:krr, ...]), x(svs), x(tkes),
+                    x(theta), x(prm[:krr, ...]), x(us), x(vs), x(ws), x(thetas),
+                    x(prs[:krr, ...]), x(svs), x(tkes),
                     x(flxzthvmf), x(flxzumf), x(flxzvmf),
                     kbudgets, missingOUT=['PEDR', 'PLEM', 'PDPMF', 'PTPMF',
                     'PTR', 'PDISS', 'PIBM_XMUT', 'PCURRENT_TKE_DISS'])
 
             result = [x(array, reverse=True) for array in result]
-            (_, _, _, _, us, vs, ws, thetas, rs, svs, tkes, sigs_turb, _,
+            (_, _, _, _, us, vs, ws, thetas, prs, svs, tkes, sigs_turb, _,
              _, _, _, _, _, _, _, _, dthetal_turb, drt_turb, _) = result
 
             us = us / rhodj
@@ -1122,7 +1123,7 @@ class PhysicsArome(PhysicsBase):
             tkes = tkes / rhodj
             dthetal_turb = dthetal_turb / rhodj
             drt_turb = drt_turb / rhodj
-            rs = rs / rhodj[numpy.newaxis, :]
+            prs = prs / rhodj[numpy.newaxis, :]
             svs = svs / rhodj
 
             if 'T' in self.prognostic_variables:
@@ -1131,14 +1132,14 @@ class PhysicsArome(PhysicsBase):
                 print('We must take into account tendencies on rc and ri. Here and in arome')
                 dqv += drt_turb * qdm
             else:
-                rvs = rs[0]
-                rcs = rs[1]
-                rrs = rs[2]
-                ris = rs[3]
-                rss = rs[4]
-                rgs = rs[5]
+                rvs = prs[0]
+                rcs = prs[1]
+                rrs = prs[2]
+                ris = prs[3]
+                rss = prs[4]
+                rgs = prs[5]
                 if krr == 7:
-                    rhs = rs[6]
+                    rhs = prs[6]
             state['sigs'] = numpy.sqrt(sigs_mf**2 + sigs_turb**2)
         else:
             raise Phyex1DError('Wrong CTURB scheme choice')
@@ -1149,6 +1150,117 @@ class PhysicsArome(PhysicsBase):
         ##################################################################
         ##################################################################
         #self._pyphyex.PYRAIN_ICE
+        if self.full_phyex_namel['PHYEX']['CMICRO'] == 'NONE':
+            pass
+        elif self.full_phyex_namel['PHYEX']['CMICRO'] == 'ICE3':
+            if 'qv' in self.prognostic_variables:
+                rvsin = rvs.copy()
+                rcsin = rcs.copy()
+                risin = ris.copy()
+            if 'T' in self.prognostic_variables:
+                thsin = thetas.copy()
+
+            x = numpy.newaxis
+
+            if krr == 7:
+                prm = numpy.array([rv[:, x], rc[:, x], rr[:, x], ri[:, x], rs[:, x], rg[:, x], rh[:, x]])
+                prs = numpy.array([rvs[:, x], rcs[:, x], rrs[:, x], ris[:, x], rss[:, x], rgs[:, x], rhs[:, x]])
+            else :
+                prm = numpy.array([rv[:, x], rc[:, x], rr[:, x], ri[:, x], rs[:, x], rg[:, x]])
+                prs = numpy.array([rvs[:, x], rcs[:, x], rrs[:, x], ris[:, x], rss[:, x], rgs[:, x]])
+
+            dummy = ris.copy() * 0.
+
+            result = self._pyphyex.PYRAIN_ICE(
+                                 nijt, nkt, 1 if self.grid.ascending else -1, 0, False, False,
+                                 MISSING, timestep, krr, exner[:, x], dzz[:, x], rhodj[:, x],
+                                 rhodref[:, x], exner[:, x], pressure[:, x], state['ni'][:, x], state['CF'][:, x],
+                                 dummy[:, x], dummy[:, x], dummy[:, x], dummy[:, x],
+                                 hlc_hrc[:, x], hlc_hcf[:, x], hli_hri[:, x], hli_hcf[:, x],
+                                 theta[:, x], prm, thetas[:, x], prs, state['sigs'][:, x],
+                                 0, MISSING, MISSING, MISSING, MISSING, MISSING, MISSING,
+                                 MISSING, MISSING, MISSING, MISSING, MISSING, MISSING, MISSING, MISSING,
+                                 MISSING, MISSING, MISSING, MISSING, MISSING,
+                                 MISSING, MISSING)
+                                 
+            #result = [array[:, 0] for array in result]
+            #(state['ni'], hlc_hrc, hlc_hcf, hli_hri, hli_hcf,
+            # thetas, prs, _, _, _, _, _, _, _,
+            # _, _, _, _, _, _, _, _, _, _, _, _, _, _) = result
+
+            theta = thetas * timestep
+            temperature = theta * exner
+            rv = prs[0] * timestep
+            rc = prs[0] * timestep
+            rr = prs[0] * timestep
+            ri = prs[0] * timestep
+            rs = prs[0] * timestep
+            rg = prs[0] * timestep
+            rh = prs[0] * timestep
+            
+            if 'qv' in self.prognostic_variables:
+                qv = rv * qdm
+                qc = rc * qdm
+                qr = rr * qdm
+                qi = ri * qdm
+                qs = rs * qdm
+                qg = rg * qdm
+                qh = rh * qdm
+                gas_constant = self.cst.Rd + state['qv'] * (self.cst.Rv - self.cst.Rd)
+                for var in ('qc', 'qr', 'qi', 'qs', 'qg', 'qh'):
+                    if var in self.prognostic_variables:
+                        gas_constant += - state[var] * self.cst.Rd
+                rho = pressure / (gas_constant * temperature)
+                rhodref = rho * qdm
+                dqv += (rvs - rvsin) * qdm
+                dqc += (rcs - rcsin) * qdm
+                dqi += (ris - risin) * qdm
+            else:
+                div = 1. + state['rv']
+                for var in ('rc', 'rr', 'ri', 'rs', 'rg', 'rh'):
+                    if var in self.prognostic_variables:
+                        div += state[var]
+                gas_constant = (self.cst.Rd + state['rv'] * self.cst.Rv) / div
+                rho = pressure / (gas_constant * temperature)
+                rhodref = pressure / ((self.cst.Rd + rv * self.cst.Rv) * theta * exner)
+
+            if 'T' in self.prognostic_variables:
+                dtemperature += (thetas - thsin) * exner
+
+            # Update state to be able to recompute pressure and altitude
+            if 'qv' in self.prognostic_variables:
+                state['qv'] = state0['qv'] + dqv * timestep
+                state['qc'] = state0['qc'] + dqc * timestep
+                state['qr'] = state0['qr'] + dqr * timestep
+                state['qi'] = state0['qi'] + dqi * timestep
+                state['qs'] = state0['qs'] + dqs * timestep
+                state['qg'] = state0['qg'] + dqg * timestep
+                state['qh'] = state0['qh'] + dqh * timestep
+            else:
+                state['rv'] = rvs * timestep
+                state['rc'] = rcs * timestep
+                state['rr'] = rrs * timestep
+                state['ri'] = ris * timestep
+                state['rs'] = rss * timestep
+                state['rg'] = rgs * timestep
+                state['rh'] = rhs * timestep
+            if 'T' in self.prognostic_variables:
+                state['T'] = state0['T'] + dtemperature * timestep
+            else:
+                state['Theta'] = thetas * timestep
+            pressure = self.grid.get_pressure('MASS', state, self.prognostic_variables)
+            z_mass = self.grid.get_altitude('MASS', state, self.prognostic_variables)
+            z_flux = self.grid.get_altitude('FLUX', state, self.prognostic_variables)
+            if self.grid.ascending:
+                dzz = numpy.diff(z_flux)
+                if dzz[-1] == numpy.inf:
+                    dzz[-1] = dzz[-2]
+            else:
+                dzz = -numpy.diff(z_flux)
+                if dzz[0] == numpy.inf:
+                    dzz[0] = dzz[1]
+        else:
+            raise Phyex1DError('Wrong CMICRO scheme choice for microphysics')
 
         ##################################################################
         ##################################################################

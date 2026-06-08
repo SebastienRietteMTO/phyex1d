@@ -1149,7 +1149,6 @@ class PhysicsArome(PhysicsBase):
         #                       MICROPHYSICS
         ##################################################################
         ##################################################################
-        #self._pyphyex.PYRAIN_ICE
         if self.full_phyex_namel['PHYEX']['CMICRO'] == 'NONE':
             pass
         elif self.full_phyex_namel['PHYEX']['CMICRO'] == 'ICE3':
@@ -1167,11 +1166,15 @@ class PhysicsArome(PhysicsBase):
             x = numpy.newaxis
 
             if krr == 7:
-                prm = numpy.array([rv[:, x], rc[:, x], rr[:, x], ri[:, x], rs[:, x], rg[:, x], rh[:, x]])
-                prs = numpy.array([rvs[:, x], rcs[:, x], rrs[:, x], ris[:, x], rss[:, x], rgs[:, x], rhs[:, x]])
-            else :
-                prm = numpy.array([rv[:, x], rc[:, x], rr[:, x], ri[:, x], rs[:, x], rg[:, x]])
-                prs = numpy.array([rvs[:, x], rcs[:, x], rrs[:, x], ris[:, x], rss[:, x], rgs[:, x]])
+                prm = numpy.array([rv[:, x], rc[:, x], rr[:, x], ri[:, x],
+                                   rs[:, x], rg[:, x], rh[:, x]])
+                prs = numpy.array([rvs[:, x], rcs[:, x], rrs[:, x], ris[:, x],
+                                   rss[:, x], rgs[:, x], rhs[:, x]])
+            else:
+                prm = numpy.array([rv[:, x], rc[:, x], rr[:, x], ri[:, x],
+                                   rs[:, x], rg[:, x]])
+                prs = numpy.array([rvs[:, x], rcs[:, x], rrs[:, x], ris[:, x],
+                                   rss[:, x], rgs[:, x]])
 
             dummy = ris.copy() * 0.
 
@@ -1186,7 +1189,7 @@ class PhysicsArome(PhysicsBase):
                                  MISSING, MISSING, MISSING, MISSING, MISSING, MISSING, MISSING, MISSING,
                                  MISSING, MISSING, MISSING, MISSING, MISSING,
                                  MISSING, MISSING)
-                                 
+
             (state['ni'], hlc_hrc, hlc_hcf, hli_hri, hli_hcf,
              thetas, prs, _, _, _, _, _, _, _, _, _, ) = result
             state['ni'] = state['ni'][:, 0]
@@ -1196,44 +1199,24 @@ class PhysicsArome(PhysicsBase):
             hli_hcf = hli_hcf[:, 0]
             thetas = thetas[:, 0]
 
-            rvs = prs[0,:,0]
-            rcs = prs[1,:,0]
-            rrs = prs[2,:,0]
-            ris = prs[3,:,0]
-            rss = prs[4,:,0]
-            rgs = prs[5,:,0]
+            rvs = prs[0, :, 0]
+            rcs = prs[1, :, 0]
+            rrs = prs[2, :, 0]
+            ris = prs[3, :, 0]
+            rss = prs[4, :, 0]
+            rgs = prs[5, :, 0]
             if krr == 7:
-                rhs = prs[6,:,0] * timestep
-            
+                rhs = prs[6, :, 0] * timestep
+
             if 'qv' in self.prognostic_variables:
-                qv = rvs * timestep * qdm
-                qc = rcs * timestep * qdm
-                qr = rrs * timestep * qdm
-                qi = ris * timestep * qdm
-                qs = rss * timestep * qdm
-                qg = rgs * timestep * qdm
-                qh = rhs * timestep * qdm
-                gas_constant = self.cst.Rd + state['qv'] * (self.cst.Rv - self.cst.Rd)
-                for var in ('qc', 'qr', 'qi', 'qs', 'qg', 'qh'):
-                    if var in self.prognostic_variables:
-                        gas_constant += - state[var] * self.cst.Rd
-                rho = pressure / (gas_constant * temperature)
-                rhodref = rho * qdm
-                dqv += (prs[0,:,0] - rvsin) * qdm
-                dqc += (prs[1,:,0] - rcsin) * qdm
-                dqr += (prs[2,:,0] - rrsin) * qdm
-                dqi += (prs[3,:,0] - risin) * qdm
-                dqs += (prs[4,:,0] - rssin) * qdm
-                dqg += (prs[5,:,0] - rgsin) * qdm
-                dqh += (prs[6,:,0] - rhsin) * qdm
-            else:
-                div = 1. + state['rv']
-                for var in ('rc', 'rr', 'ri', 'rs', 'rg', 'rh'):
-                    if var in self.prognostic_variables:
-                        div += state[var]
-                gas_constant = (self.cst.Rd + state['rv'] * self.cst.Rv) / div
-                rho = pressure / (gas_constant * temperature)
-                rhodref = pressure / ((self.cst.Rd + rv * self.cst.Rv) * theta * exner)
+                dqv += (prs[0, :, 0] - rvsin) * qdm
+                dqc += (prs[1, :, 0] - rcsin) * qdm
+                dqr += (prs[2, :, 0] - rrsin) * qdm
+                dqi += (prs[3, :, 0] - risin) * qdm
+                dqs += (prs[4, :, 0] - rssin) * qdm
+                dqg += (prs[5, :, 0] - rgsin) * qdm
+                if krr == 7:
+                    dqh += (prs[6, :, 0] - rhsin) * qdm
 
             if 'T' in self.prognostic_variables:
                 dtemperature += (thetas - thsin) * exner

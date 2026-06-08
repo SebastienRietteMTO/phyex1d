@@ -1156,7 +1156,11 @@ class PhysicsArome(PhysicsBase):
             if 'qv' in self.prognostic_variables:
                 rvsin = rvs.copy()
                 rcsin = rcs.copy()
+                rrsin = rrs.copy()
                 risin = ris.copy()
+                rssin = rss.copy()
+                rgsin = rgs.copy()
+                rhsin = rhs.copy()
             if 'T' in self.prognostic_variables:
                 thsin = thetas.copy()
 
@@ -1202,13 +1206,13 @@ class PhysicsArome(PhysicsBase):
                 rhs = prs[6,:,0] * timestep
             
             if 'qv' in self.prognostic_variables:
-                qv = rv * qdm
-                qc = rc * qdm
-                qr = rr * qdm
-                qi = ri * qdm
-                qs = rs * qdm
-                qg = rg * qdm
-                qh = rh * qdm
+                qv = rvs * timestep * qdm
+                qc = rcs * timestep * qdm
+                qr = rrs * timestep * qdm
+                qi = ris * timestep * qdm
+                qs = rss * timestep * qdm
+                qg = rgs * timestep * qdm
+                qh = rhs * timestep * qdm
                 gas_constant = self.cst.Rd + state['qv'] * (self.cst.Rv - self.cst.Rd)
                 for var in ('qc', 'qr', 'qi', 'qs', 'qg', 'qh'):
                     if var in self.prognostic_variables:
@@ -1217,7 +1221,11 @@ class PhysicsArome(PhysicsBase):
                 rhodref = rho * qdm
                 dqv += (prs[0,:,0] - rvsin) * qdm
                 dqc += (prs[1,:,0] - rcsin) * qdm
+                dqr += (prs[2,:,0] - rrsin) * qdm
                 dqi += (prs[3,:,0] - risin) * qdm
+                dqs += (prs[4,:,0] - rssin) * qdm
+                dqg += (prs[5,:,0] - rgsin) * qdm
+                dqh += (prs[6,:,0] - rhsin) * qdm
             else:
                 div = 1. + state['rv']
                 for var in ('rc', 'rr', 'ri', 'rs', 'rg', 'rh'):

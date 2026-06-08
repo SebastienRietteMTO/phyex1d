@@ -1192,16 +1192,14 @@ class PhysicsArome(PhysicsBase):
             hli_hcf = hli_hcf[:, 0]
             thetas = thetas[:, 0]
 
-            theta = thetas * timestep
-            temperature = theta * exner
-            rv = prs[0,:,0] * timestep
-            rc = prs[1,:,0] * timestep
-            rr = prs[2,:,0] * timestep
-            ri = prs[3,:,0] * timestep
-            rs = prs[4,:,0] * timestep
-            rg = prs[5,:,0] * timestep
+            rvs = prs[0,:,0]
+            rcs = prs[1,:,0]
+            rrs = prs[2,:,0]
+            ris = prs[3,:,0]
+            rss = prs[4,:,0]
+            rgs = prs[5,:,0]
             if krr == 7:
-                rh = prs[6,:,0] * timestep
+                rhs = prs[6,:,0] * timestep
             
             if 'qv' in self.prognostic_variables:
                 qv = rv * qdm
@@ -1217,9 +1215,9 @@ class PhysicsArome(PhysicsBase):
                         gas_constant += - state[var] * self.cst.Rd
                 rho = pressure / (gas_constant * temperature)
                 rhodref = rho * qdm
-                dqv += (rvs - rvsin) * qdm
-                dqc += (rcs - rcsin) * qdm
-                dqi += (ris - risin) * qdm
+                dqv += (prs[0,:,0] - rvsin) * qdm
+                dqc += (prs[1,:,0] - rcsin) * qdm
+                dqi += (prs[3,:,0] - risin) * qdm
             else:
                 div = 1. + state['rv']
                 for var in ('rc', 'rr', 'ri', 'rs', 'rg', 'rh'):
@@ -1232,38 +1230,6 @@ class PhysicsArome(PhysicsBase):
             if 'T' in self.prognostic_variables:
                 dtemperature += (thetas - thsin) * exner
 
-            # Update state to be able to recompute pressure and altitude
-            if 'qv' in self.prognostic_variables:
-                state['qv'] = state0['qv'] + dqv * timestep
-                state['qc'] = state0['qc'] + dqc * timestep
-                state['qr'] = state0['qr'] + dqr * timestep
-                state['qi'] = state0['qi'] + dqi * timestep
-                state['qs'] = state0['qs'] + dqs * timestep
-                state['qg'] = state0['qg'] + dqg * timestep
-                state['qh'] = state0['qh'] + dqh * timestep
-            else:
-                state['rv'] = rvs * timestep
-                state['rc'] = rcs * timestep
-                state['rr'] = rrs * timestep
-                state['ri'] = ris * timestep
-                state['rs'] = rss * timestep
-                state['rg'] = rgs * timestep
-                state['rh'] = rhs * timestep
-            if 'T' in self.prognostic_variables:
-                state['T'] = state0['T'] + dtemperature * timestep
-            else:
-                state['Theta'] = thetas * timestep
-            pressure = self.grid.get_pressure('MASS', state, self.prognostic_variables)
-            z_mass = self.grid.get_altitude('MASS', state, self.prognostic_variables)
-            z_flux = self.grid.get_altitude('FLUX', state, self.prognostic_variables)
-            if self.grid.ascending:
-                dzz = numpy.diff(z_flux)
-                if dzz[-1] == numpy.inf:
-                    dzz[-1] = dzz[-2]
-            else:
-                dzz = -numpy.diff(z_flux)
-                if dzz[0] == numpy.inf:
-                    dzz[0] = dzz[1]
         else:
             raise Phyex1DError('Wrong CMICRO scheme choice for microphysics')
 

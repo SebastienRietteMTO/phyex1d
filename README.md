@@ -18,7 +18,10 @@ git clone https://github.com/SebastienRietteMTO/phyex1d.git
 cd phyex1d
 pip install -e .
 cd ..
+
 git clone https://github.com/GdR-DEPHY/DEPHY-SCM.git
+
+pip install pyfortool
 
 # PHYEX compilation
 git clone https://github.com/UMR-CNRM/PHYEX.git
@@ -32,7 +35,7 @@ An easy install procedure also exists:
 ```
 wget https://github.com/SebastienRietteMTO/phyex1d/raw/refs/heads/main/easy_install.sh
 chmod +x easy_install.sh
-./easy_install.sh INSTALL_DIR MODE
+./easy_install.sh INSTALL_DIR MODE  # doesn't work
 ```
 
 ### Experiment

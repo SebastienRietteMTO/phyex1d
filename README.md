@@ -14,7 +14,10 @@ Online documentation is [here](https://sebastienriettemto.github.io/phyex1d).
 The installation procedure is as follows:
 ```
 # phyex1d and DEPHY-SCM installation
-pip install phyex1d
+git clone https://github.com/SebastienRietteMTO/phyex1d.git
+cd phyex1d
+pip install -e .
+cd ..
 git clone https://github.com/GdR-DEPHY/DEPHY-SCM.git
 
 # PHYEX compilation

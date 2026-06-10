@@ -27,10 +27,25 @@ fi
 mkdir "$directory"
 cd "$directory"
 
+# Host specific environment
+extraenv="export PATH=$HOME/.local/bin:$PATH"
+if [[ "$HOSTNAME" =~ ^spiritx?[0-9]+.ipsl.fr$ ]]; then
+  extraenv="$extraenv ; module load python/meso-3.12"
+fi
+eval "$extraenv"
+
 # Python env
 python3 -m venv phyex1d.env
 . phyex1d.env/bin/activate
 
+# CMake
+cmake_installed=$(cmake --version | head -1 | cut -d' ' -f3)
+cmake_target="3.18"
+if [ "$(printf '%s\n' "$cmake_installed" "$cmake_target" | sort -V | head -1)" = "$cmake_installed" ]; then
+  pip install --upgrade cmake
+fi
+
+# SCM cases
 git clone https://github.com/GdR-DEPHY/DEPHY-SCM.git
 
 git_pip() {
@@ -69,6 +84,7 @@ cd ..
 
 cat - <<EOF > execute.sh
 cd $PWD
+eval "$extraenv"
 . PHYEX/tools/env.sh
 . phyex1d.env/bin/activate
 phyex1d DEPHY-SCM/ARMCU/REF/ARMCU_REF_SCM_driver.nc \\

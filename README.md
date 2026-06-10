@@ -28,6 +28,7 @@ git clone https://github.com/GdR-DEPHY/DEPHY-SCM.git
 
 # PHYEX compilation
 git clone https://github.com/UMR-CNRM/PHYEX.git
+pip install -r PHYEX/requirements.txt
 . PHYEX/tools/env.sh
 cd PHYEX/build/with_ecbuild
 ./make_ecbuild.sh
@@ -39,6 +40,7 @@ An easy install procedure also exists:
 wget https://github.com/SebastienRietteMTO/phyex1d/raw/refs/heads/main/easy_install.sh
 chmod +x easy_install.sh
 ./easy_install.sh INSTALL_DIR MODE
+with MODE being 'maxidev', 'dev' or 'user'.
 ```
 
 ### Experiment

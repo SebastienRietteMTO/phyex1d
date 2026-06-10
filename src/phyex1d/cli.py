@@ -4,7 +4,7 @@ Command line client
 
 import argparse
 from matplotlib import pyplot as plt
-from .phyex1d import Phyex1d
+from .experiment_runner import ExperimentRunner
 from . import Phyex1DError
 
 
@@ -72,7 +72,7 @@ The allowed keys are:
         experiments.append(expe_descr)
 
     # Run
-    ph1d = Phyex1d(args.INPUT_FILE, experiments, args.output_dir, args.name)
+    ph1d = ExperimentRunner(args.INPUT_FILE, experiments, args.output_dir, args.name)
     ph1d.run(force=args.force)
 
     # plot

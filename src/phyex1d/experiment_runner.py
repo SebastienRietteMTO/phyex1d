@@ -1,33 +1,38 @@
 """
-Phyex1d is the main object of the phyex1d package; it deals with the execution
+ExperimentRunner is the main object of the phyex1d package; it deals with the execution
 """
 
-import netCDF4
 from pppy import PPPYComp
+
 from .physics import PhysicsAromeTQ, PhysicsAromeThetaR
+from .case import Case
 from .grid import Grid
 
 
-class Phyex1d(PPPYComp):
+class ExperimentRunner(PPPYComp):
     """
     Deals with the execution of the 1D model
     """
-    def __init__(self, inputfile, experiments, output_dir, comp_name=''):
+    def __init__(self, inputfile_or_case, experiments, output_dir, comp_name=''):
         """
-        :param inputfile: netcdf file describing the case
+        :param inputfile_or_case: path to a netCDF driver file or a Case instance
         :param experiments: list of dictionaries describing the experiments
                             allowed keys are:
                               - grid: Grid name or file name containing a grid description
                                       (with '.grid' extension).
                               - dt: Timestep (s)
                               - name: experiment name
-        :param timestep: timestep legth (s)
         :param comp_name: comparison name
         """
         def string2filename(s):
             return s.replace('"', '').replace("'", "").replace(' ', '_')
 
-        self.inputfile = inputfile
+        if isinstance(inputfile_or_case, Case):
+            case = inputfile_or_case
+        else:
+            case = Case(inputfile_or_case)
+
+        self.case = case
         schemes = []
         for exp in experiments:
             cls = {'PhysicsAromeTQ': PhysicsAromeTQ,
@@ -37,7 +42,7 @@ class Phyex1d(PPPYComp):
                                method='step-by-step',
                                name=exp.get('name', 'Experiment'),
                                tag=string2filename(exp.get('name', 'Experiment')),
-                               inputfile=inputfile,
+                               case=case,
                                grid=Grid(exp.get('grid', 'L90arome')),
                                pyphyex=exp.get('pyphyex', None),
                                pyecrad=exp.get('pyecrad', None),
@@ -47,16 +52,7 @@ class Phyex1d(PPPYComp):
                                attrs=exp.get('attrs', {})))
         super().__init__(schemes=schemes,
                          output_dir=output_dir,
-                         duration=self.get_duration(),
+                         duration=self.case.duration,
                          init_state={},
                          name=comp_name,
                          tag=string2filename(comp_name))
-
-    def get_duration(self):
-        """
-        Read the simulation duration in the netcdf file describing the case
-        """
-        with netCDF4.Dataset(self.inputfile, 'r') as nc:
-            duration = nc['time'][-1] - nc['time'][0]
-
-        return duration

@@ -49,3 +49,8 @@ class Cst():  # pylint: disable=too-few-public-methods,too-many-instance-attribu
         self.gami = (self.Ci - self.Cpv) / self.Rv
         self.betai = (self.LsTt / self.Rv) + (self.gami * self.Tt)
         self.alpi = numpy.log(self.EsTt) + (self.betai / self.Tt) + (self.gami * numpy.log(self.Tt))
+
+
+from .physics_base import PhysicsBase
+from .phyex import (PHYEX, PhysicsArome, PhysicsAromeTQ, PhysicsAromeThetaR,
+                    PhysicsForcingTQ, PhysicsForcingThetaR)

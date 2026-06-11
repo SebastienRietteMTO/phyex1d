@@ -4,7 +4,7 @@ ExperimentRunner is the main object of the phyex1d package; it deals with the ex
 
 from pppy import PPPYComp
 
-from .physics import PhysicsAromeTQ, PhysicsAromeThetaR
+from .phyex import PhysicsAromeTQ, PhysicsAromeThetaR
 from .case import Case
 from .grid import Grid
 

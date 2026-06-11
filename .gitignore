@@ -3,3 +3,4 @@ src/phyex1d.egg-info/
 __pycache__/
 docs/html
 dist/
+venv

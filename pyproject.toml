@@ -13,6 +13,7 @@ dependencies = [
   "netCDF4",
   "f90nml",
   "ephem",
+  "xarray",
 ]
 authors = [
   { name = "Sébastien Riette", email = "sebastien.riette@meteo.fr" },

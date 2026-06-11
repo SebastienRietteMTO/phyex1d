@@ -5,7 +5,7 @@ ExperimentRunner is the main object of the phyex1d package; it deals with the ex
 from pppy import PPPYComp
 
 from .phyex import PhysicsAromeTQ, PhysicsAromeThetaR
-from .case import Case
+from .case import Case, CaseCommonFormat
 from .grid import Grid
 
 
@@ -30,7 +30,7 @@ class ExperimentRunner(PPPYComp):
         if isinstance(inputfile_or_case, Case):
             case = inputfile_or_case
         else:
-            case = Case(inputfile_or_case)
+            case = CaseCommonFormat(inputfile_or_case)
 
         self.case = case
         schemes = []

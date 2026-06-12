@@ -78,6 +78,7 @@ $(function() {
 <li><a class="el" href="index.html#usage">Usage</a><ul>
 <li><a class="el" href="index.html#installation">Installation</a></li>
 <li><a class="el" href="index.html#experiment">Experiment</a></li>
+<li><a class="el" href="index.html#creating-a-case-from-xarray-data">Creating a case from xarray data</a></li>
 </ul>
 </li>
 <li><a class="el" href="index.html#main-references">Main references</a></li>
@@ -112,6 +113,9 @@ Experiment</h2>
 <p>The ARMCU case can be run with the following command: </p><div class="fragment"><div class="line">. PHYEX/tools/env.sh</div>
 <div class="line">phyex1d ./DEPHY-SCM/ARMCU/REF/ARMCU_REF_SCM_driver.nc --exp dt=60 --plot rc.png rc y_var=P</div>
 </div><!-- fragment --><p> And a rc plot is available in the <code>rc.png</code> file.</p>
+<h2><a class="anchor" id="creating-a-case-from-xarray-data"></a>
+Creating a case from xarray data</h2>
+<p>Instead of using a netCDF driver file, you can build a case programmatically from an xarray Dataset using <code>CaseXarray</code>. A complete example with profiles, forcing and plots is available at <a href="examples/case_xarray_demo.py"><code>examples/case_xarray_demo.py</code></a>.</p>
 <h1><a class="anchor" id="main-references"></a>
 Main references</h1>
 <ul>

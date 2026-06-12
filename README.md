@@ -4,6 +4,7 @@
   - [Usage](#usage)
     - [Installation](#installation)
     - [Experiment](#experiment)
+    - [Creating a case from xarray data](#creating-a-case-from-xarray-data)
   - [Main references](#main-references)
   - [Command line arguments](#command-line-arguments)
   - [Description of the format for the .grid files](#description-of-the-format-for-the-grid-files)
@@ -51,6 +52,13 @@ The ARMCU case can be run with the following command:
 phyex1d ./DEPHY-SCM/ARMCU/REF/ARMCU_REF_SCM_driver.nc --exp dt=60 --plot rc.png rc y_var=P
 ```
 And a rc plot is available in the ```rc.png``` file.
+
+### Creating a case from xarray data
+
+Instead of using a netCDF driver file, you can build a case programmatically
+from an xarray Dataset using `CaseXarray`. A complete example with profiles,
+forcing and plots is available at
+[`examples/case_xarray_demo.py`](examples/case_xarray_demo.py).
 
 ## Main references
   - PHYEX:

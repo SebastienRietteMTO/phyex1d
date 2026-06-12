@@ -154,6 +154,11 @@ class PhysicsBase(PPPY):
                                 LDCHECK=False, KPRINT=1, LDINIT=False)
             self.full_phyex_namel = f90nml.read(f'fort.{numnml}')
             set_default(self.full_phyex_namel)
+            self.full_phyex_namel['PHYEX']['CMICRO'] = nml['PHYEX']['CMICRO']
+            self.full_phyex_namel['PHYEX']['CSCONV'] = nml['PHYEX']['CSCONV']
+            self.full_phyex_namel['PHYEX']['CTURB'] = nml['PHYEX']['CTURB']
+            self.full_phyex_namel['PHYEX']['RAD'] = nml['PHYEX']['RAD']
+            self.full_phyex_namel['PHYEX']['SURFACE'] = nml['PHYEX']['SURFACE']
             os.remove(f'fort.{numnml}')
 
         if nml['PHYEX']['RAD'] == 'ECRAD' and self.case.radiation == 'on':
@@ -306,6 +311,13 @@ class PhysicsBase(PPPY):
                 else:
                     logging.warning('%s not found in the netCDF driver!', nc_names[var])
 
+            for var in ('Ts', 'Tskin'):
+                if var not in init_state:
+                    if 'tskin' in nc.variables:
+                        init_state[var] = nc['tskin'][0]
+                    elif 'ts_forc' in nc.variables:
+                        init_state[var] = nc['ts_forc'][0]
+            
             # We perform the interpolation on the natural vertical coordinate
             if self.grid.kind in ('H', 'hybridH'):
                 input_coord = nc['zh'][0, :] + nc['orog'][0]
@@ -327,8 +339,9 @@ class PhysicsBase(PPPY):
                     interp = RegularGridInterpolator((input_coord, ), nc[nc_names[var]][0, :],
                                                      bounds_error=False, fill_value=None)
                     init_state[var] = interp(output_coord)
-            init_state['tke'] = numpy.maximum(self.full_phyex_namel['NAM_TURBn']['XTKEMIN'],
-                                              init_state['tke'])
+            if self.full_phyex_namel['PHYEX']['CTURB'] == 'TKEL':
+                init_state['tke'] = numpy.maximum(self.full_phyex_namel['NAM_TURBn']['XTKEMIN'],
+                                                  init_state['tke'])
 
         # Vertical coordinates
         self.add_vertical_coordinate(init_state)
@@ -478,10 +491,16 @@ class PhysicsBase(PPPY):
 
         # Surface
         if 'Ts' in state:
-            interp, nc = get_interpolator('ts_forc', nc)
+            if 'tskin' in nc.variables:
+                interp, nc = get_interpolator('tskin', nc)
+            elif 'ts_forc' in nc.variables:
+                interp, nc = get_interpolator('ts_forc', nc)
             state['Ts'] = interp([time])[0]
         if 'Tskin' in state:
-            interp, nc = get_interpolator('tskin', nc)
+            if 'tskin' in nc.variables:
+                interp, nc = get_interpolator('tskin', nc)
+            elif 'ts_forc' in nc.variables:
+                interp, nc = get_interpolator('ts_forc', nc)
             state['Tskin'] = interp([time])[0]
         if 'Ps' in state:
             interp, nc = get_interpolator('ps_forc', nc)
@@ -532,7 +551,8 @@ class PhysicsArome(PhysicsBase):
 
         # Save initial state and control
         state0 = {k: v.copy() for (k, v) in state.items()}
-        state['tke'] = numpy.maximum(self.full_phyex_namel['NAM_TURBn']['XTKEMIN'],
+        if self.full_phyex_namel['PHYEX']['CTURB'] == 'TKEL':
+            state['tke'] = numpy.maximum(self.full_phyex_namel['NAM_TURBn']['XTKEMIN'],
                                      state['tke'])
 
         # Preparation: grid and other dimensions
@@ -826,6 +846,7 @@ class PhysicsArome(PhysicsBase):
         #                       SURFACE
         ##################################################################
         ##################################################################
+        self.case.surface_forcing_wind='none'
         klevgrd = 0 if self.grid.ascending else -1
         if self.case.surface_forcing_temp in ('none', 'ts') or \
            self.case.surface_forcing_moisture in ('none', 'beta', 'mrsos') or \
@@ -864,10 +885,10 @@ class PhysicsArome(PhysicsBase):
         sfu_scheme = None
         sfv_scheme = None
         if self.full_phyex_namel['PHYEX']['SURFACE'] == 'NONE':
-            sshf_scheme = 0.
-            swf_scheme = 0.
-            sfu_scheme = 0.
-            sfv_scheme = 0.
+            sshf_scheme = numpy.float64(0.)
+            swf_scheme = numpy.float64(0.)
+            sfu_scheme = numpy.float64(0.)
+            sfv_scheme = numpy.float64(0.)
         elif not need_scheme:
             pass
         elif self.full_phyex_namel['PHYEX']['SURFACE'] == 'WASP':

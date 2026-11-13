@@ -58,16 +58,14 @@ The allowed keys are:
         attrs = {}
         for arg in expe:
             key, val = arg.split('=', 1)
-            if key in ('grid', 'dt', 'dx', 'dy', 'name', 'class', 'pyphyex', 'pyecrad', 'namel'):
-                expe_descr[key] = val
-            elif key == 'attr':
+            if key == 'attr':
                 attr, attrval = val.split(':', 1)
                 if attr in ('radiation', ):
                     attrs[attr] = str(attrval)
                 else:
-                    raise  Phyex1DError(f"This experiment attribute is not implemented: {attr}")
+                    raise Phyex1DError(f"This experiment attribute is not implemented: {attr}")
             else:
-                raise  Phyex1DError(f"This experiment option doest not exist: {key}")
+                expe_descr[key] = val
         expe_descr['attrs'] = attrs
         experiments.append(expe_descr)
 

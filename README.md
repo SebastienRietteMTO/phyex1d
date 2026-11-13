@@ -19,8 +19,10 @@ git clone https://github.com/GdR-DEPHY/DEPHY-SCM.git
 
 # PHYEX compilation
 git clone https://github.com/UMR-CNRM/PHYEX.git
-pip install -r PHYEX/requirements.txt
-. PHYEX/tools/env.sh
+cd PHYEX
+python3 -m venv venv
+. venv/bin/activate
+pip install -e tools
 cd PHYEX/build/with_ecbuild
 ./make_ecbuild.sh
 cd ../../..
@@ -39,7 +41,7 @@ with MODE being 'maxidev', 'dev' or 'user'.
 The ARMCU case can be run with the following command:
 ```
 . PHYEX/tools/env.sh
-phyex1d ./DEPHY-SCM/ARMCU/REF/ARMCU_REF_SCM_driver.nc --exp dt=60 --plot rc.png rc y_var=P
+phyex1d ./DEPHY-SCM/ARMCU/REF/ARMCU_REF_SCM_driver.nc --exp dt=60 --plot rc.png rc y_var=P pyphyex=./PHYEX/build/with_ecbuild/arch_gnu/build/bin/pyphyex.py
 ```
 And a rc plot is available in the ```rc.png``` file.
 
